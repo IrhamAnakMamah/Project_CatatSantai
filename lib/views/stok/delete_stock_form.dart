@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:catatsantai/assets/delete_confirmation_dialog.dart'; // Import dialog konfirmasi hapus
-import 'package:catatsantai/assets/delete_success_dialog.dart'; // Import dialog sukses hapus
+import 'package:catatsantai/views/components/delete_confirmation_dialog.dart'; // Import dialog konfirmasi hapus
+import 'package:catatsantai/views/components/delete_success_dialog.dart'; // Import dialog sukses hapus
 
 class DeleteStockForm extends StatefulWidget {
   const DeleteStockForm({super.key});

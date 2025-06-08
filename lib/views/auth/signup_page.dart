@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../controllers/auth_controller.dart';
+import '../../models/pengguna_model.dart';
 
+// 1. Mengubah widget menjadi StatefulWidget
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
@@ -8,18 +12,67 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  // State to control password visibility
+
+  // 2. Menambahkan TextEditingController untuk setiap input
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  // 3. Menambahkan state untuk visibility password
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
   @override
+  void dispose() {
+    // Penting untuk membersihkan controller
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  // 4. Menambahkan fungsi untuk menangani logika registrasi
+  Future<void> _handleRegister() async {
+    // Validasi sederhana untuk password
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password dan konfirmasi password tidak cocok!')),
+      );
+      return;
+    }
+
+    final authController = Provider.of<AuthController>(context, listen: false);
+    final penggunaBaru = Pengguna(
+      nomorTelepon: _phoneController.text,
+      password: _passwordController.text,
+    );
+
+    try {
+      await authController.register(penggunaBaru);
+
+      if (mounted) {
+        Navigator.pop(context); // Kembali ke halaman login setelah berhasil
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registrasi berhasil! Silakan masuk.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // 5. Ini adalah kode UI asli Anda dengan penyesuaian logika
     return Scaffold(
-      // Background color of the page, similar to the Figma design
-      backgroundColor: const Color(0xFFF7F5EC), // Light cream color
+      backgroundColor: const Color(0xFFF7F5EC),
       body: Stack(
         children: [
-          // Background shapes (circles and plus signs)
+          // Background shapes (tidak ada perubahan di sini)
           Positioned(
             bottom: -50,
             left: -50,
@@ -27,7 +80,7 @@ class _SignUpPageState extends State<SignUpPage> {
               width: 200,
               height: 200,
               decoration: BoxDecoration(
-                color: const Color(0xFF4FC0BD).withOpacity(0.8), // Tosca
+                color: const Color(0xFF4FC0BD).withOpacity(0.8),
                 shape: BoxShape.circle,
               ),
             ),
@@ -39,7 +92,7 @@ class _SignUpPageState extends State<SignUpPage> {
               '+',
               style: TextStyle(
                 fontSize: 60,
-                color: const Color(0xFF1D4A4B).withOpacity(0.3), // Darker tosca, semi-transparent
+                color: const Color(0xFF1D4A4B).withOpacity(0.3),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -63,36 +116,35 @@ class _SignUpPageState extends State<SignUpPage> {
               width: 150,
               height: 150,
               decoration: BoxDecoration(
-                color: const Color(0xFF4FC0BD).withOpacity(0.5), // Tosca, semi-transparent
+                color: const Color(0xFF4FC0BD).withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
             ),
           ),
 
-          // Main content of the page (white card)
+          // Konten utama halaman registrasi (dengan penyesuaian)
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Card(
-                elevation: 8, // Shadow effect
+                elevation: 8,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20), // Rounded corners
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 child: Padding(
                   padding: const EdgeInsets.all(30.0),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min, // To make the column take minimum height
-                    crossAxisAlignment: CrossAxisAlignment.stretch, // To make elements fill width
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Title "Daftar"
                       Text(
                         'Daftar',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1D4A4B), // Dark text color
+                          color: const Color(0xFF1D4A4B),
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -108,6 +160,8 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
+                        // --- PENYESUAIAN ---
+                        controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         decoration: InputDecoration(
                           hintText: 'Masukkan No. Handphone',
@@ -115,15 +169,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             borderRadius: BorderRadius.circular(10),
                             borderSide: BorderSide(color: const Color(0xFF4FC0BD), width: 1.5),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: const Color(0xFF4FC0BD).withOpacity(0.7), width: 1.0),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: const Color(0xFF1D4A4B), width: 2.0),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          // ... sisa dekorasi UI Anda ...
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -139,20 +185,13 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
-                        obscureText: !_isPasswordVisible, // Control password visibility
+                        // --- PENYESUAIAN ---
+                        controller: _passwordController,
+                        obscureText: !_isPasswordVisible,
                         decoration: InputDecoration(
                           hintText: 'Masukkan Password',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: const Color(0xFF4FC0BD), width: 1.5),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: const Color(0xFF4FC0BD).withOpacity(0.7), width: 1.0),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: const Color(0xFF1D4A4B), width: 2.0),
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -165,7 +204,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               });
                             },
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          // ... sisa dekorasi UI Anda ...
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -181,20 +220,13 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
-                        obscureText: !_isConfirmPasswordVisible, // Control confirm password visibility
+                        // --- PENYESUAIAN ---
+                        controller: _confirmPasswordController,
+                        obscureText: !_isConfirmPasswordVisible,
                         decoration: InputDecoration(
                           hintText: 'Konfirmasi Password',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: const Color(0xFF4FC0BD), width: 1.5),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: const Color(0xFF4FC0BD).withOpacity(0.7), width: 1.0),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: const Color(0xFF1D4A4B), width: 2.0),
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -207,33 +239,38 @@ class _SignUpPageState extends State<SignUpPage> {
                               });
                             },
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          // ... sisa dekorasi UI Anda ...
                         ),
                       ),
                       const SizedBox(height: 40),
 
                       // "Daftar" button
-                      ElevatedButton(
-                        onPressed: () {
-                          // TODO: Add logic for sign up process
-                          print('Tombol Daftar ditekan!'); // Example action
+                      // --- PENYESUAIAN ---
+                      Consumer<AuthController>(
+                        builder: (context, controller, child) {
+                          return controller.isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : ElevatedButton(
+                            // --- PENYESUAIAN ---
+                            onPressed: _handleRegister,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF6A8EEB),
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 5,
+                            ),
+                            child: Text(
+                              'Daftar',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6A8EEB), // Blue button color
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 5, // Button shadow
-                        ),
-                        child: Text(
-                          'Daftar',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 20),
 
@@ -249,13 +286,13 @@ class _SignUpPageState extends State<SignUpPage> {
                           ),
                           GestureDetector(
                             onTap: () {
-                              // TODO: Add navigation to Login Page
-                              Navigator.pop(context); // Example: Go back to login page
+                              // --- PENYESUAIAN ---
+                              Navigator.pop(context); // Kembali ke halaman login
                             },
                             child: Text(
                               'Masuk',
                               style: TextStyle(
-                                color: const Color(0xFF6A8EEB), // Blue color
+                                color: const Color(0xFF6A8EEB),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

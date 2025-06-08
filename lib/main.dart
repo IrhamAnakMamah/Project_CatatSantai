@@ -1,11 +1,22 @@
+import 'package:catatsantai/controllers/stock_controller.dart';
+import 'package:catatsantai/views/main_page.dart';
 import 'package:flutter/material.dart';
-// Pastikan nama package di bawah ini SAMA PERSIS dengan nama project lo di pubspec.yaml
-// Contoh: Jika nama project lo 'catatsantai_app', maka jadi 'package:catatsantai_app/assets/notification_page.dart'
-import 'package:catatsantai/assets/notification_page.dart'; // Import halaman NotificationPage
+import 'package:provider/provider.dart';
+import 'controllers/auth_controller.dart';
+import 'views/auth/login_screen.dart'; // Sesuai nama file Anda
+import 'views/transaksi/transaction_page.dart'; // Halaman utama setelah login
 
 void main() {
-  // Ini adalah fungsi utama yang menjalankan aplikasi Flutter lo.
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthController()),
+        ChangeNotifierProvider(create: (_) => StockController()),
+        // Daftarkan controller lain di sini nanti
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -13,20 +24,34 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MaterialApp adalah widget inti untuk aplikasi Material Design.
     return MaterialApp(
-      // Judul aplikasi yang akan muncul di task switcher (recent apps).
-      title: 'Catat Santai App',
-      // Tema aplikasi lo. Di sini pake tema default biru.
+      title: 'Catat Santai',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      // Halaman pertama yang akan ditampilkan saat aplikasi dijalankan.
-      // Langsung tampilkan halaman NotificationPage sebagai home.
-      home: const NotificationPage(), // Langsung panggil NotificationPage sebagai halaman utama
-      // Ini buat ngilangin banner 'DEBUG' di pojok kanan atas pas development.
+      home: const AuthWrapper(),
       debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+/// Widget ini berfungsi sebagai "penjaga" yang mengarahkan pengguna
+/// berdasarkan status login dari AuthController.
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Consumer akan "mendengarkan" perubahan (notifyListeners) dari AuthController
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        if (authController.isLoggedIn) {
+          return const TransactionPage(); // Jika sudah login, tampilkan halaman utama
+        } else {
+          return const LoginPage(); // Jika belum, tampilkan halaman login
+        }
+      },
     );
   }
 }

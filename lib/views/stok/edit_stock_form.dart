@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:catatsantai/assets/transaction_success.dart'; // Import dialog sukses transaksi
+import 'package:catatsantai/views/components/transaction_success.dart'; // Import dialog sukses transaksi
 
-class AddStockForm extends StatefulWidget {
-  const AddStockForm({super.key});
+class EditStockForm extends StatefulWidget {
+  const EditStockForm({super.key});
 
   @override
-  State<AddStockForm> createState() => _AddStockFormState();
+  State<EditStockForm> createState() => _EditStockFormState();
 }
 
-class _AddStockFormState extends State<AddStockForm> {
-  String? _selectedItemType; // Untuk dropdown Jenis barang
-  TextEditingController _itemNameController = TextEditingController(); // Untuk Nama barang
+class _EditStockFormState extends State<EditStockForm> {
+  String? _selectedExistingItem; // Untuk dropdown Nama barang (yang mau diedit)
+  TextEditingController _itemTypeController = TextEditingController(); // Untuk Edit jenis barang
+  TextEditingController _itemNameController = TextEditingController(); // Untuk Edit Nama barang
   int _quantity = 0; // Untuk Jumlah
-  TextEditingController _unitPriceController = TextEditingController(); // Untuk Harga satuan
+  TextEditingController _unitPriceController = TextEditingController(); // Untuk Edit Harga satuan
   double _totalPrice = 0.0; // Total harga
 
-  final List<String> _itemTypes = ['Makanan', 'Minuman', 'Pakaian', 'Elektronik'];
+  final List<String> _existingItems = ['Nasi Goreng (Makanan)', 'Es Teh (Minuman)', 'T-Shirt (Pakaian)'];
 
   @override
   void dispose() {
+    _itemTypeController.dispose();
     _itemNameController.dispose();
     _unitPriceController.dispose();
     super.dispose();
@@ -36,9 +38,9 @@ class _AddStockFormState extends State<AddStockForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Jenis barang Dropdown
+        // Nama barang (Dropdown untuk pilih barang yang mau diedit)
         Text(
-          'Jenis barang',
+          'Nama barang',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -47,8 +49,8 @@ class _AddStockFormState extends State<AddStockForm> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedItemType,
-          hint: const Text('Masukkan jenis barang'),
+          value: _selectedExistingItem,
+          hint: const Text('Pilih barang yang mau di edit'),
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -64,23 +66,61 @@ class _AddStockFormState extends State<AddStockForm> {
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-          items: _itemTypes.map((type) {
+          items: _existingItems.map((item) {
             return DropdownMenuItem(
-              value: type,
-              child: Text(type),
+              value: item,
+              child: Text(item),
             );
           }).toList(),
           onChanged: (newValue) {
             setState(() {
-              _selectedItemType = newValue;
+              _selectedExistingItem = newValue;
+              // TODO: Load data barang yang dipilih ke text field di bawah
+              // Contoh:
+              // _itemTypeController.text = 'Makanan';
+              // _itemNameController.text = 'Nasi Goreng';
+              // _quantity = 1;
+              // _unitPriceController.text = '15000';
+              // _calculateTotal();
             });
           },
         ),
         const SizedBox(height: 20),
 
-        // Nama barang Text Field
+        // Edit jenis barang Text Field
         Text(
-          'Nama barang',
+          'Edit jenis barang',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1D4A4B),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _itemTypeController,
+          decoration: InputDecoration(
+            hintText: 'Masukkan jenis barang',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: const Color(0xFF4FC0BD), width: 1.5),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: const Color(0xFF4FC0BD).withOpacity(0.7), width: 1.0),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: const Color(0xFF1D4A4B), width: 2.0),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Edit Nama barang Text Field
+        Text(
+          'Edit Nama barang',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -165,9 +205,9 @@ class _AddStockFormState extends State<AddStockForm> {
         ),
         const SizedBox(height: 20),
 
-        // Harga satuan Text Field
+        // Edit Harga satuan Text Field
         Text(
-          'Harga satuan',
+          'Edit Harga satuan',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -224,17 +264,18 @@ class _AddStockFormState extends State<AddStockForm> {
         ),
         const SizedBox(height: 40),
 
-        // Save Button (untuk Tambah)
+        // Save Button (untuk Edit)
         Align(
           alignment: Alignment.centerRight,
           child: ElevatedButton(
             onPressed: () {
-              // TODO: Tambahkan logika untuk menyimpan stok baru
-              print('Simpan Tambah Stok:');
-              print('Jenis Barang: $_selectedItemType');
-              print('Nama Barang: ${_itemNameController.text}');
+              // TODO: Tambahkan logika untuk menyimpan perubahan stok
+              print('Simpan Edit Stok:');
+              print('Barang yang diedit: $_selectedExistingItem');
+              print('Edit Jenis Barang: ${_itemTypeController.text}');
+              print('Edit Nama Barang: ${_itemNameController.text}');
               print('Jumlah: $_quantity');
-              print('Harga Satuan: ${_unitPriceController.text}');
+              print('Edit Harga Satuan: ${_unitPriceController.text}');
               print('Total: $_totalPrice');
 
               // Tampilkan dialog sukses setelah simpan

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:catatsantai/assets/financial_report_page_content.dart'; // Import the financial report content
-import 'package:catatsantai/assets/stock_report_page.dart'; // Import the stock report content
+import 'package:catatsantai/views/components/financial_report_page_content.dart'; // Import the financial report content
+import 'package:catatsantai/views/laporan/stock_report_page.dart'; // Import the stock report content
 
 // This is the main report page with "Keuangan" and "Stok" tabs.
 class FinancialReportPage extends StatefulWidget {

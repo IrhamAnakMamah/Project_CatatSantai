@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:catatsantai/assets/stock_page.dart'; // Import StockPage untuk navigasi kembali
+import 'package:catatsantai/views/stok/stock_page.dart'; // Import StockPage untuk navigasi kembali
 
 class DeleteSuccessDialog extends StatelessWidget {
   const DeleteSuccessDialog({super.key});

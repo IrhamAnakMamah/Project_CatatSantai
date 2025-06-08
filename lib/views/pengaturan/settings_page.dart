@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:catatsantai/assets/login_screen.dart'; // Import LoginPage untuk navigasi Log out
-import 'package:catatsantai/assets/logout_confirmation_dialog.dart'; // Import dialog konfirmasi logout
+import 'package:catatsantai/views/auth/login_screen.dart'; // Import LoginPage untuk navigasi Log out
+import 'package:catatsantai/views/components/logout_confirmation_dialog.dart'; // Import dialog konfirmasi logout
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

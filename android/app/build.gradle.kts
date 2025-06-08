@@ -8,7 +8,13 @@ plugins {
 android {
     namespace = "com.example.catatsantai"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
+    // ===================================================================
+    // PERBAIKAN: Mengganti versi NDK default dengan versi yang diminta
+    // oleh plugin 'sqflite' dan 'path_provider_android'.
+    // ndkVersion = flutter.ndkVersion // Baris lama dihapus/diganti
+    ndkVersion = "27.0.12077973"
+    // ===================================================================
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

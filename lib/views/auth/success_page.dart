@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:catatsantai/assets/login_screen.dart'; // Import LoginPage untuk navigasi
+import 'package:catatsantai/views/auth/login_screen.dart'; // Import LoginPage untuk navigasi
 
 class SuccessPage extends StatelessWidget { // Nama class diubah menjadi SuccessPage
   const SuccessPage({super.key});

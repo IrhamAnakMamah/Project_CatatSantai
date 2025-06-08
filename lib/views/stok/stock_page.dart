@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:catatsantai/assets/add_stock_form.dart'; // Import form Tambah Stok
-import 'package:catatsantai/assets/edit_stock_form.dart'; // Import form Edit Stok
-import 'package:catatsantai/assets/delete_stock_form.dart'; // Import form Hapus Stok
+import 'package:catatsantai/views/stok/add_stock_form.dart'; // Import form Tambah Stok
+import 'package:catatsantai/views/stok/edit_stock_form.dart'; // Import form Edit Stok
+import 'package:catatsantai/views/stok/delete_stock_form.dart'; // Import form Hapus Stok
 // import 'package:catatsantai/assets/transaction_success_dialog.dart'; // Jika ingin menampilkan dialog sukses
 
 class StockPage extends StatefulWidget {
