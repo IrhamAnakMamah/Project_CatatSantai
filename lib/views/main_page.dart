@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'transaksi/transaction_page.dart'; // Impor halaman transaksi
-import 'stok/stock_page.dart';           // Impor halaman stok
-import 'laporan/financial_report_page.dart'; // Impor halaman laporan
+// Impor semua halaman utama yang akan dinavigasikan
+import 'transaksi/transaction_page.dart';
+import 'stok/stock_page.dart';
+import 'laporan/financial_report_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -12,16 +13,20 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   // State untuk melacak halaman mana yang sedang aktif.
+  // 0 = Transaksi, 1 = Stok, 2 = Laporan
   int _selectedIndex = 0;
 
-  // Daftar halaman yang akan ditampilkan sesuai dengan indeks.
+  // Daftar halaman yang akan ditampilkan sesuai dengan indeks di atas.
+  // Pastikan urutannya sesuai dengan urutan item di BottomNavigationBar.
   static const List<Widget> _pages = <Widget>[
     TransactionPage(),
     StockPage(),
     FinancialReportPage(),
   ];
 
-  // Fungsi yang akan dipanggil saat item di navigasi bar ditekan.
+  // Fungsi ini akan dipanggil saat salah satu item navigasi ditekan.
+  // Ia akan mengubah state _selectedIndex, yang kemudian akan memicu build ulang
+  // untuk menampilkan halaman yang benar.
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -31,13 +36,14 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Body akan menampilkan halaman yang sesuai dari daftar _pages.
+      // Bagian body akan secara dinamis menampilkan halaman dari daftar _pages
+      // berdasarkan _selectedIndex yang sedang aktif.
       body: _pages[_selectedIndex],
 
       // Ini adalah bilah navigasi bawah Anda.
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex, // Memberi tahu item mana yang aktif
-        onTap: _onItemTapped, // Fungsi yang dipanggil saat item ditekan
+        currentIndex: _selectedIndex, // Memberi tahu item mana yang harus disorot
+        onTap: _onItemTapped, // Menghubungkan aksi tap ke fungsi kita
 
         // Styling agar sesuai dengan desain Anda
         backgroundColor: Colors.white,

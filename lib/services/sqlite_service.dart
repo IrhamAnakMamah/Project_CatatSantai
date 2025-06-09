@@ -1,4 +1,5 @@
 // lib/services/sqlite_service.dart
+import '../models/kategori_model.dart';
 import '../models/pengguna_model.dart';
 import '../models/barang_model.dart';
 import 'package:sqflite/sqflite.dart';
@@ -121,16 +122,28 @@ class SqliteService {
     }
   }
 
+  /// Menyimpan kategori baru.
+  Future<Kategori> createKategori(Kategori kategori) async {
+    final db = await instance.database;
+    final id = await db.insert('kategori', kategori.toMap());
+    return kategori.copyWith(id: id); // Anda perlu menambahkan copyWith di model Kategori
+  }
+
+  /// Mengambil semua kategori.
+  Future<List<Kategori>> getAllKategori() async {
+    final db = await instance.database;
+    final result = await db.query('kategori', orderBy: 'nama_kategori ASC');
+    return result.map((json) => Kategori.fromMap(json)).toList();
+  }
 
   /// Menyimpan barang baru ke dalam tabel 'barang'.
-  /// Mengembalikan objek Barang yang sudah lengkap dengan ID.
   Future<Barang> createBarang(Barang barang) async {
     final db = await instance.database;
     final id = await db.insert('barang', barang.toMap());
     return barang.copyWith(id: id);
   }
 
-  /// Mengambil satu barang berdasarkan ID-nya.
+  /// Mengambil satu barang spesifik berdasarkan ID-nya.
   Future<Barang> getBarangById(int id) async {
     final db = await instance.database;
     final maps = await db.query(
@@ -142,7 +155,7 @@ class SqliteService {
     if (maps.isNotEmpty) {
       return Barang.fromMap(maps.first);
     } else {
-      throw Exception('ID $id tidak ditemukan');
+      throw Exception('ID $id tidak ditemukan di database');
     }
   }
 

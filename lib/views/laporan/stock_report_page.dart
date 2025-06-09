@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/stock_controller.dart';
 
-// Nama class tidak diubah dari file asli Anda
 class StockReportPage extends StatelessWidget {
   const StockReportPage({super.key});
 
@@ -11,7 +10,7 @@ class StockReportPage extends StatelessWidget {
     // Gunakan Consumer untuk "mendengarkan" perubahan dari StockController
     return Consumer<StockController>(
       builder: (context, controller, child) {
-        // Tampilkan loading indicator jika sedang memuat data
+        // Tampilkan loading indicator jika sedang memuat data dan daftar masih kosong
         if (controller.isLoading && controller.barangList.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }

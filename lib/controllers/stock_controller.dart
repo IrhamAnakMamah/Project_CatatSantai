@@ -9,55 +9,54 @@ class StockController extends ChangeNotifier {
   List<Barang> _barangList = [];
   bool _isLoading = false;
 
-  // Getter publik agar UI bisa mengakses state ini
+  // Getter publik agar UI bisa mengakses state ini dengan aman (read-only)
   List<Barang> get barangList => _barangList;
   bool get isLoading => _isLoading;
 
+  // Constructor ini akan dipanggil saat StockController pertama kali dibuat.
+  // Kita langsung memanggil fetchBarang() agar data stok segera dimuat.
   StockController() {
-    // Langsung muat data barang saat controller pertama kali dibuat
     fetchBarang();
   }
 
   /// Mengambil semua data barang dari database dan memperbarui state.
   Future<void> fetchBarang() async {
-    _isLoading = true;
-    notifyListeners();
-
+    _setLoading(true);
     try {
       _barangList = await _sqliteService.getAllBarang();
     } catch (e) {
-      // Handle error jika ada
-      print(e);
+      print("Error saat fetchBarang: $e");
+      _barangList = []; // Kosongkan daftar jika terjadi error
     }
-
-    _isLoading = false;
-    notifyListeners(); // Beri tahu UI untuk update dengan data baru
+    _setLoading(false);
   }
 
   /// Menambahkan barang baru ke database, lalu memuat ulang daftar barang.
   Future<void> addBarang(Barang barang) async {
-    _isLoading = true;
-    notifyListeners();
-
+    _setLoading(true);
     await _sqliteService.createBarang(barang);
-    await fetchBarang(); // Muat ulang daftar untuk menampilkan data baru
+    // Setelah menambah, panggil fetchBarang() untuk mendapatkan daftar terbaru
+    // yang sudah terurut dan menyertakan data baru.
+    await fetchBarang();
   }
 
   /// Mengupdate barang yang ada di database, lalu memuat ulang daftar barang.
   Future<void> updateBarang(Barang barang) async {
-    _isLoading = true;
-    notifyListeners();
-
+    _setLoading(true);
     await _sqliteService.updateBarang(barang);
     await fetchBarang();
   }
 
   /// Menghapus barang dari database, lalu memuat ulang daftar barang.
   Future<void> deleteBarang(int id) async {
-    _isLoading = true;
-    notifyListeners();
-
+    _setLoading(true);
     await _sqliteService.deleteBarang(id);
     await fetchBarang();
+  }
+
+  // Fungsi helper internal untuk mengelola state loading dan memberitahu UI
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners(); // Ini adalah perintah kunci untuk memberitahu UI agar refresh
   }
 }

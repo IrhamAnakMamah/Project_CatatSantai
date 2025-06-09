@@ -339,57 +339,11 @@ class _TransactionPageState extends State<TransactionPage> {
                     ),
                   ),
                 ),
-
-                // Bottom Navigation Bar
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildBottomNavItem(Icons.receipt_long, 'catat transaksi', true),
-                      _buildBottomNavItem(Icons.inventory_2, 'catat stok', false),
-                      _buildBottomNavItem(Icons.bar_chart, 'Laporan', false),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-
-  // Helper method for building bottom navigation bar items
-  Widget _buildBottomNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? const Color(0xFF1D4A4B) : Colors.grey[600], // Warna aktif/nonaktif
-          size: 28,
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: isActive ? const Color(0xFF1D4A4B) : Colors.grey[600],
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
     );
   }
 }
