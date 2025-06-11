@@ -4,6 +4,8 @@ import '../models/pengguna_model.dart';
 import '../models/barang_model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../models/transaksi_model.dart';
+import '../models/detail_transaksi_model.dart';
 
 class SqliteService {
   static final SqliteService instance = SqliteService._init();
@@ -183,6 +185,61 @@ class SqliteService {
       where: 'id_barang = ?',
       whereArgs: [id],
     );
+  }
+
+  /// Menyimpan transaksi baru dan mengupdate stok barang secara atomik.
+  Future<void> createTransaksi(Transaksi transaksi, List<DetailTransaksi> details) async {
+    final db = await instance.database;
+
+    // Gunakan db.transaction untuk memastikan semua operasi berhasil atau semuanya dibatalkan
+    await db.transaction((txn) async {
+      // 1. Simpan header transaksi dan dapatkan ID-nya
+      final idTransaksi = await txn.insert('transaksi', transaksi.toMapWithoutDetails());
+
+      // 2. Loop melalui setiap detail barang dalam transaksi
+      for (final detail in details) {
+        // 3. Simpan detail transaksi dengan ID header yang baru saja didapat
+        await txn.insert('detail_transaksi', detail.toMapWithTransactionId(idTransaksi));
+
+        // 4. Ambil data barang saat ini untuk mendapatkan stok terakhir
+        final barangResult = await txn.query('barang', where: 'id_barang = ?', whereArgs: [detail.idBarang]);
+
+        if (barangResult.isNotEmpty) {
+          final barang = Barang.fromMap(barangResult.first);
+
+          // Error handling: Pastikan stok cukup sebelum mengurangi
+          if (barang.stok < detail.jumlah) {
+            // Jika stok tidak cukup, batalkan seluruh transaksi dengan melempar error
+            throw Exception('Stok untuk ${barang.namaBarang} tidak mencukupi.');
+          }
+
+          final stokBaru = barang.stok - detail.jumlah;
+          // 5. Update stok barang di database
+          await txn.update('barang', {'stok': stokBaru}, where: 'id_barang = ?', whereArgs: [detail.idBarang]);
+        } else {
+          // Jika karena suatu alasan barang tidak ditemukan, batalkan transaksi
+          throw Exception('Barang dengan ID ${detail.idBarang} tidak ditemukan.');
+        }
+      }
+    });
+  }
+
+  /// Mengambil semua transaksi dari database (untuk halaman laporan nanti).
+  Future<List<Transaksi>> getAllTransaksi() async {
+    final db = await instance.database;
+    final result = await db.query('transaksi', orderBy: 'tanggal DESC');
+
+    List<Transaksi> transaksiList = [];
+    for (var trxMap in result) {
+      final detailResult = await db.query(
+        'detail_transaksi',
+        where: 'id_transaksi = ?',
+        whereArgs: [trxMap['id_transaksi']],
+      );
+      final details = detailResult.map((json) => DetailTransaksi.fromMap(json)).toList();
+      transaksiList.add(Transaksi.fromMap(trxMap, details));
+    }
+    return transaksiList;
   }
 
   Future close() async {

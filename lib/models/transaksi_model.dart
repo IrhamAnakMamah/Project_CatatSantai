@@ -1,4 +1,4 @@
-import 'package:catatsantai/models/detail_transaksi_model.dart'; // Pastikan import detail
+import '../models/detail_transaksi_model.dart'; // Pastikan import detail
 
 class Transaksi {
   final int? id;
