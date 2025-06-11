@@ -88,8 +88,6 @@ class SqliteService {
     )''');
   }
 
-  // Nanti kita akan isi bagian ini dengan fungsi-fungsi CRUD
-
   /// Menyimpan pengguna baru ke dalam tabel 'pengguna'.
   /// Mengembalikan objek Pengguna yang sudah lengkap dengan ID.
   Future<Pengguna> registerUser(Pengguna pengguna) async {
