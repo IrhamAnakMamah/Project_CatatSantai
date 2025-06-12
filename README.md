@@ -20,11 +20,11 @@ Catat Santai adalah aplikasi mobile yang dirancang khusus untuk membantu usaha k
 
 Aplikasi Catat Santai menyediakan beberapa fitur inti untuk memudahkan pengelolaan usaha:
 
-* **Registrasi dan Autentikasi Pengguna**: Pengguna dapat mendaftar dengan nomor telepon dan password sederhana, dilengkapi validasi OTP (opsional, direncanakan) untuk kemudahan. [cite_start]Aplikasi akan menyimpan token sesi secara lokal untuk akses otomatis setelah login pertama.
-* **Input Data Transaksi**: Memungkinkan pencatatan transaksi (penjualan/pembelian) dengan detail nama barang, jumlah, harga satuan, dan total. [cite_start]Direncanakan fitur *speech-to-text* untuk memudahkan lansia.
-* **Manajemen Stok Barang**: Pengguna dapat menambah, mengedit, dan menghapus stok barang. [cite_start]Stok akan diperbarui secara otomatis setelah transaksi, dan sistem akan memberikan peringatan visual/suara untuk stok rendah (<10% dari stok awal).
-* **Laporan Keuangan dan Stok**: Menghasilkan laporan dinamis meliputi total pemasukan, pengeluaran, keuntungan bersih, daftar transaksi (harian/mingguan/bulanan), serta jumlah stok barang per kategori. [cite_start]Laporan dioptimalkan untuk performa cepat dan memiliki opsi ekspor ke teks atau WhatsApp.
-* [cite_start]**Pencadangan Data Otomatis**: Data lokal akan dicadangkan ke Firebase Firestore setiap hari pukul 00:00 jika perangkat online, dengan sinkronisasi otomatis saat terhubung kembali.
+* **Registrasi dan Autentikasi Pengguna**: Pengguna dapat mendaftar dengan nomor telepon dan password sederhana, dilengkapi validasi OTP (opsional, direncanakan) untuk kemudahan. Aplikasi akan menyimpan token sesi secara lokal untuk akses otomatis setelah login pertama.
+* **Input Data Transaksi**: Memungkinkan pencatatan transaksi (penjualan/pembelian) dengan detail nama barang, jumlah, harga satuan, dan total. Direncanakan fitur *speech-to-text* untuk memudahkan lansia.
+* **Manajemen Stok Barang**: Pengguna dapat menambah, mengedit, dan menghapus stok barang. Stok akan diperbarui secara otomatis setelah transaksi, dan sistem akan memberikan peringatan visual/suara untuk stok rendah (<10% dari stok awal).
+* **Laporan Keuangan dan Stok**: Menghasilkan laporan dinamis meliputi total pemasukan, pengeluaran, keuntungan bersih, daftar transaksi (harian/mingguan/bulanan), serta jumlah stok barang per kategori. Laporan dioptimalkan untuk performa cepat dan memiliki opsi ekspor ke teks atau WhatsApp.
+* **Pencadangan Data Otomatis**: Data lokal akan dicadangkan ke Firebase Firestore setiap hari pukul 00:00 jika perangkat online, dengan sinkronisasi otomatis saat terhubung kembali.
 
 ## Struktur Proyek
 
