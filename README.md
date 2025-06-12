@@ -1,6 +1,6 @@
 # Catat Santai
 
-Catat Santai adalah aplikasi mobile yang dirancang khusus untuk membantu usaha kecil, khususnya pedagang lansia, dalam mengelola keuangan dan inventaris barang dengan mudah dan terstruktur. [cite_start]Aplikasi ini bertujuan untuk menyederhanakan pencatatan transaksi harian, pemantauan stok, dan pembuatan laporan keuangan sederhana yang sering kali masih dilakukan secara manual dan berdasarkan 'feeling'.
+Catat Santai adalah aplikasi mobile yang dirancang khusus untuk membantu usaha kecil, khususnya pedagang lansia, dalam mengelola keuangan dan inventaris barang dengan mudah dan terstruktur. Aplikasi ini bertujuan untuk menyederhanakan pencatatan transaksi harian, pemantauan stok, dan pembuatan laporan keuangan sederhana yang sering kali masih dilakukan secara manual dan berdasarkan 'feeling'.
 
 ## Daftar Isi
 
