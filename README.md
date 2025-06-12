@@ -29,7 +29,7 @@ Aplikasi Catat Santai menyediakan beberapa fitur inti untuk memudahkan pengelola
 ## Struktur Proyek
 
 Struktur direktori utama proyek ini diatur sebagai berikut:
-
+```
 catatsantai/
 ├── android/              # Konfigurasi Android Native
 ├── ios/                  # Konfigurasi iOS Native
@@ -61,7 +61,7 @@ catatsantai/
 ├── web/                  # Konfigurasi Web
 ├── windows/              # Konfigurasi Windows Desktop
 └── pubspec.yaml          # File konfigurasi dependensi dan metadata proyek Flutter
-
+```
 ## Teknologi yang Digunakan
 
 * **Framework**: Flutter (Dart)
