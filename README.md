@@ -33,7 +33,7 @@ Struktur direktori utama proyek ini diatur sebagai berikut:
 catatsantai/
 ├── android/              # Konfigurasi Android Native
 ├── ios/                  # Konfigurasi iOS Native
-├── lib/
+├── lib/                  # Kode sumber utama aplikasi Flutter
 │   ├── controllers/      # Logika bisnis dan manajemen state (menggunakan Provider)
 │   │   ├── auth_controller.dart
 │   │   ├── category_controller.dart
