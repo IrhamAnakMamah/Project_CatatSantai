@@ -1,167 +1,134 @@
 import 'package:flutter/material.dart';
-import 'package:catatsantai/views/components/financial_report_page_content.dart'; // Import the financial report content
-import 'package:catatsantai/views/laporan/stock_report_page.dart'; // Import the stock report content
+import 'package:intl/intl.dart'; // Impor paket intl
+import 'package:provider/provider.dart';
+import '../../controllers/report_controller.dart';
 
-// This is the main report page with "Keuangan" and "Stok" tabs.
-class FinancialReportPage extends StatefulWidget {
-  const FinancialReportPage({super.key});
-
-  @override
-  State<FinancialReportPage> createState() => _FinancialReportPageState();
-}
-
-class _FinancialReportPageState extends State<FinancialReportPage> {
-  // State for segmented control (Keuangan, Stok)
-  // 0: Keuangan, 1: Stok
-  List<bool> _reportTypeSelection = [true, false]; // Default: Keuangan is active
+class FinancialReportPageContent extends StatelessWidget {
+  const FinancialReportPageContent({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Determine the active report type tab index
-    int activeReportTypeIndex = _reportTypeSelection.indexOf(true);
+    // Gunakan Consumer untuk "mendengarkan" perubahan dari ReportController
+    return Consumer<ReportController>(
+      builder: (context, controller, child) {
+        // Helper untuk format mata uang Rupiah
+        final currencyFormatter = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
+        );
 
-    // Helper widget to build the current report tab based on the active tab
-    Widget _buildCurrentReportTab() {
-      if (activeReportTypeIndex == 0) {
-        return const FinancialReportPageContent(); // Display Financial Report Content
-      } else { // activeReportTypeIndex == 1 (Stok)
-        return const StockReportPage(); // Display Stock Report Page
-      }
-    }
-
-    return Scaffold(
-      // Page background color, similar to the Figma design
-      backgroundColor: const Color(0xFFF7F5EC), // Light cream color
-      body: Stack(
-        children: [
-          // Background shapes (circles and plus signs) - consistent with previous pages
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4FC0BD).withOpacity(0.8), // Tosca
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 100,
-            left: 20,
-            child: Text(
-              '+',
-              style: TextStyle(
-                fontSize: 60,
-                color: const Color(0xFF1D4A4B).withOpacity(0.3), // Darker tosca, semi-transparent
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Positioned(
-            top: 50,
-            right: 20,
-            child: Text(
-              '+',
-              style: TextStyle(
-                fontSize: 40,
-                color: const Color(0xFF1D4A4B).withOpacity(0.3),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Positioned(
-            top: -30,
-            right: -30,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4FC0BD).withOpacity(0.5), // Tosca, semi-transparent
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-
-          // Main page content
-          SafeArea( // To avoid overlap with the status bar
-            child: Column(
-              children: [
-                // Header (Gear, Notification, User icons)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Icon(Icons.settings, color: const Color(0xFF1D4A4B), size: 28),
-                      Row(
-                        children: [
-                          Icon(Icons.notifications, color: const Color(0xFF1D4A4B), size: 28),
-                          const SizedBox(width: 16),
-                          Icon(Icons.person, color: const Color(0xFF1D4A4B), size: 28),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Segmented Control (Keuangan, Stok)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 5,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Dropdown untuk filter periode waktu
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                width: 150,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
                     ),
-                    child: ToggleButtons(
-                      isSelected: _reportTypeSelection,
-                      onPressed: (int index) {
-                        setState(() {
-                          for (int buttonIndex = 0; buttonIndex < _reportTypeSelection.length; buttonIndex++) {
-                            _reportTypeSelection[buttonIndex] = (buttonIndex == index);
-                          }
-                          // TODO: Add logic to load data based on tab (Keuangan/Stok)
-                          print('Report Tab: ${['Keuangan', 'Stok'][index]}');
-                        });
-                      },
-                      fillColor: const Color(0xFF6AC0BD), // Color when selected
-                      selectedColor: Colors.white, // Text color when selected
-                      color: const Color(0xFF1D4A4B), // Text color when not selected
-                      splashColor: const Color(0xFF6AC0BD).withOpacity(0.3),
-                      highlightColor: const Color(0xFF6AC0BD).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                      borderWidth: 0, // Remove default ToggleButtons border
-                      constraints: BoxConstraints.expand(width: (MediaQuery.of(context).size.width - 48 - 20) / 2, height: 45), // Adjust width
-                      children: const <Widget>[
-                        Text('Keuangan', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('Stok', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
+                  ],
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<ReportPeriod>(
+                    // Nilai dropdown diambil dari controller
+                    value: controller.selectedPeriod,
+                    icon: Icon(Icons.keyboard_arrow_down, color: const Color(0xFF1D4A4B)),
+                    style: TextStyle(
+                      color: const Color(0xFF1D4A4B),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
+                    // Saat nilai diubah, panggil fungsi changePeriod di controller
+                    onChanged: (ReportPeriod? newValue) {
+                      if (newValue != null) {
+                        controller.changePeriod(newValue);
+                      }
+                    },
+                    // Membuat daftar item dropdown dari enum ReportPeriod
+                    items: ReportPeriod.values.map<DropdownMenuItem<ReportPeriod>>((ReportPeriod value) {
+                      String text;
+                      switch (value) {
+                        case ReportPeriod.harian: text = 'Harian'; break;
+                        case ReportPeriod.mingguan: text = 'Mingguan'; break;
+                        case ReportPeriod.bulanan: text = 'Bulanan'; break;
+                        case ReportPeriod.tahunan: text = 'Tahunan'; break;
+                      }
+                      return DropdownMenuItem<ReportPeriod>(
+                        value: value,
+                        child: Text(text),
+                      );
+                    }).toList(),
                   ),
                 ),
-                const SizedBox(height: 40),
-
-                // Content based on selected tab (Keuangan or Stok)
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: _buildCurrentReportTab(), // Call the appropriate tab content
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 30),
+
+            // Tampilkan loading indicator jika sedang memuat data
+            if (controller.isLoading)
+              const Center(child: CircularProgressIndicator())
+            else
+            // Jika tidak loading, tampilkan data keuangan
+              Column(
+                children: [
+                  // Baris Pemasukan
+                  _buildReportRow(
+                    label: 'Pemasukan',
+                    // Ambil nilai pemasukan dari controller dan format
+                    amount: currencyFormatter.format(controller.pemasukan),
+                    amountColor: const Color(0xFF1D4A4B),
+                  ),
+                  const Divider(height: 30, thickness: 1, color: Colors.grey),
+
+                  // Baris Pengeluaran
+                  _buildReportRow(
+                    label: 'Pengeluaran',
+                    // Ambil nilai pengeluaran dari controller dan format
+                    amount: currencyFormatter.format(controller.pengeluaran),
+                    amountColor: Colors.red[600]!,
+                  ),
+                  const Divider(height: 30, thickness: 1, color: Colors.grey),
+
+                  // Baris Keuntungan
+                  _buildReportRow(
+                    label: 'Keuntungan',
+                    // Ambil nilai keuntungan dari controller dan format
+                    amount: currencyFormatter.format(controller.keuntungan),
+                    amountColor: const Color(0xFF6AC0BD),
+                  ),
+                  const Divider(height: 30, thickness: 1, color: Colors.grey),
+                ],
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper method untuk membangun baris laporan (tidak berubah)
+  Widget _buildReportRow({required String label, required String amount, required Color amountColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1D4A4B)),
+        ),
+        Text(
+          amount,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: amountColor),
+        ),
+      ],
     );
   }
 }

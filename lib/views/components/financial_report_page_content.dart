@@ -1,116 +1,120 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Impor paket intl
+import 'package:provider/provider.dart';
+import '../../controllers/report_controller.dart';
 
-// This widget displays the financial report content (Income, Expenses, Profit).
-class FinancialReportPageContent extends StatefulWidget {
+class FinancialReportPageContent extends StatelessWidget {
   const FinancialReportPageContent({super.key});
 
   @override
-  State<FinancialReportPageContent> createState() => _FinancialReportPageContentState();
-}
-
-class _FinancialReportPageContentState extends State<FinancialReportPageContent> {
-  String? _selectedTimePeriod = 'Tahunan'; // Default: Tahunan
-
-  // Example data for financial report (can be dynamic later)
-  final double _income = 100000000.0;
-  final double _expenses = 0.0;
-  final double _profit = 100000000.0;
-
-  // List of time periods for the dropdown
-  final List<String> _timePeriods = ['Harian', 'Mingguan', 'Bulanan', 'Tahunan'];
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Time Period Dropdown
-        Align(
-          alignment: Alignment.centerRight,
-          child: Container(
-            width: 150, // Adjust dropdown width
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
+    // Gunakan Consumer untuk "mendengarkan" perubahan dari ReportController
+    return Consumer<ReportController>(
+      builder: (context, controller, child) {
+        // Helper untuk format mata uang Rupiah
+        final currencyFormatter = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Dropdown untuk filter periode waktu
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                width: 150,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedTimePeriod,
-                icon: Icon(Icons.keyboard_arrow_down, color: const Color(0xFF1D4A4B)),
-                style: TextStyle(
-                  color: const Color(0xFF1D4A4B),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<ReportPeriod>(
+                    value: controller.selectedPeriod,
+                    icon: Icon(Icons.keyboard_arrow_down, color: const Color(0xFF1D4A4B)),
+                    style: TextStyle(
+                      color: const Color(0xFF1D4A4B),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    onChanged: (ReportPeriod? newValue) {
+                      if (newValue != null) {
+                        controller.changePeriod(newValue);
+                      }
+                    },
+                    items: ReportPeriod.values.map<DropdownMenuItem<ReportPeriod>>((ReportPeriod value) {
+                      String text;
+                      switch (value) {
+                        case ReportPeriod.harian: text = 'Harian'; break;
+                        case ReportPeriod.mingguan: text = 'Mingguan'; break;
+                        case ReportPeriod.bulanan: text = 'Bulanan'; break;
+                        case ReportPeriod.tahunan: text = 'Tahunan'; break;
+                      }
+                      return DropdownMenuItem<ReportPeriod>(
+                        value: value,
+                        child: Text(text),
+                      );
+                    }).toList(),
+                  ),
                 ),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedTimePeriod = newValue;
-                    // TODO: Add logic to load financial data based on time period
-                    print('Time Period: $newValue');
-                  });
-                },
-                items: _timePeriods.map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: 30),
+            const SizedBox(height: 30),
 
-        // Income row
-        _buildReportRow('Pemasukan', _income),
-        const Divider(height: 30, thickness: 1, color: Colors.grey),
-
-        // Expenses row
-        _buildReportRow('Pengeluaran', _expenses, isExpense: true),
-        const Divider(height: 30, thickness: 1, color: Colors.grey),
-
-        // Profit row
-        _buildReportRow('Keuntungan', _profit, isProfit: true),
-        const Divider(height: 30, thickness: 1, color: Colors.grey),
-      ],
+            // Tampilkan loading indicator jika sedang memuat data
+            if (controller.isLoading)
+              const Expanded(child: Center(child: CircularProgressIndicator()))
+            else
+            // Jika tidak loading, tampilkan data keuangan
+              Column(
+                children: [
+                  _buildReportRow(
+                    label: 'Pemasukan',
+                    amount: currencyFormatter.format(controller.pemasukan),
+                    amountColor: const Color(0xFF1D4A4B),
+                  ),
+                  const Divider(height: 30, thickness: 1, color: Colors.grey),
+                  _buildReportRow(
+                    label: 'Pengeluaran',
+                    amount: currencyFormatter.format(controller.pengeluaran),
+                    amountColor: Colors.red[600]!,
+                  ),
+                  const Divider(height: 30, thickness: 1, color: Colors.grey),
+                  _buildReportRow(
+                    label: 'Keuntungan',
+                    amount: currencyFormatter.format(controller.keuntungan),
+                    amountColor: const Color(0xFF6AC0BD),
+                  ),
+                  const Divider(height: 30, thickness: 1, color: Colors.grey),
+                ],
+              ),
+          ],
+        );
+      },
     );
   }
 
-  // Helper method to build a single report row (Income, Expenses, Profit)
-  Widget _buildReportRow(String label, double amount, {bool isExpense = false, bool isProfit = false}) {
-    Color amountColor = const Color(0xFF1D4A4B); // Default color
-    if (isExpense) {
-      amountColor = Colors.red[600]!; // Red for expenses
-    } else if (isProfit) {
-      amountColor = const Color(0xFF6AC0BD); // Greenish for profit
-    }
-
+  Widget _buildReportRow({required String label, required String amount, required Color amountColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1D4A4B),
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF1D4A4B)),
         ),
         Text(
-          'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}', // Rupiah format
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: amountColor,
-          ),
+          amount,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: amountColor),
         ),
       ],
     );

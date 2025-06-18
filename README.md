@@ -148,8 +148,6 @@ Jika Anda ingin berkontribusi, silakan ikuti langkah-langkah berikut:
 
 ## Lisensi
 
-[TBD: Tambahkan informasi lisensi di sini, misalnya MIT, Apache 2.0, dll.]
-
 ## Tim Pengembang
 
 Proyek ini dikembangkan oleh:

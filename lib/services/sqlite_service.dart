@@ -242,6 +242,37 @@ class SqliteService {
     return transaksiList;
   }
 
+  /// Mengambil semua transaksi dalam rentang tanggal tertentu.
+  /// Tanggal disimpan sebagai teks dalam format ISO 8601, jadi kita bisa membandingkannya sebagai string.
+  Future<List<Transaksi>> getTransaksiByDateRange(DateTime start, DateTime end) async {
+    final db = await instance.database;
+
+    // Menambahkan satu hari ke tanggal akhir untuk memastikan semua transaksi
+    // pada hari 'end' ikut terambil (karena perbandingan waktunya hingga 23:59:59).
+    final endDate = end.add(const Duration(days: 1));
+
+    final result = await db.query(
+      'transaksi',
+      where: 'tanggal >= ? AND tanggal < ?',
+      whereArgs: [start.toIso8601String(), endDate.toIso8601String()],
+      orderBy: 'tanggal DESC',
+    );
+
+    // Proses ini sama seperti di getAllTransaksi, yaitu mengambil detail
+    // untuk setiap transaksi yang ditemukan.
+    List<Transaksi> transaksiList = [];
+    for (var trxMap in result) {
+      final detailResult = await db.query(
+        'detail_transaksi',
+        where: 'id_transaksi = ?',
+        whereArgs: [trxMap['id_transaksi']],
+      );
+      final details = detailResult.map((json) => DetailTransaksi.fromMap(json)).toList();
+      transaksiList.add(Transaksi.fromMap(trxMap, details));
+    }
+    return transaksiList;
+  }
+
   Future close() async {
     final db = await instance.database;
     db.close();

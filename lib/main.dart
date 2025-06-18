@@ -2,7 +2,9 @@ import 'controllers/category_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'controllers/auth_controller.dart';
-import 'controllers/stock_controller.dart'; // 1. Impor StockController
+import 'controllers/transaction_controller.dart';
+import 'controllers/stock_controller.dart';
+import 'controllers/report_controller.dart'; // 1. Impor StockController
 import 'views/main_page.dart';
 import 'views/auth/login_screen.dart'; // Sesuaikan dengan nama file login Anda
 
@@ -14,6 +16,8 @@ void main() {
         // 2. Daftarkan StockController di sini
         ChangeNotifierProvider(create: (_) => StockController()),
         ChangeNotifierProvider(create: (_) => CategoryController()),
+        ChangeNotifierProvider(create: (_) => TransactionController()),
+        ChangeNotifierProvider(create: (_) => ReportController()),
       ],
       child: const MyApp(),
     ),
