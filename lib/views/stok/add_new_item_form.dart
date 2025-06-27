@@ -16,7 +16,7 @@ class AddNewItemForm extends StatefulWidget {
 class _AddNewItemFormState extends State<AddNewItemForm> {
   Kategori? _selectedKategori;
   final _itemNameController = TextEditingController();
-  int _quantity = 0;
+  int _initialStock = 0;
   final _unitPriceController = TextEditingController();
   final _modalPriceController = TextEditingController();
 
@@ -35,11 +35,10 @@ class _AddNewItemFormState extends State<AddNewItemForm> {
   }
 
   void _showAddKategoriDialog() {
-    // Fungsi ini tidak berubah
+    final newCategoryController = TextEditingController();
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        final newCategoryController = TextEditingController();
         return AlertDialog(
           title: const Text('Tambah Kategori Baru'),
           content: TextField(
@@ -74,22 +73,24 @@ class _AddNewItemFormState extends State<AddNewItemForm> {
 
 
   Future<void> _handleSubmit() async {
-    if (_itemNameController.text.isEmpty || _quantity == 0 || _unitPriceController.text.isEmpty || _modalPriceController.text.isEmpty || _selectedKategori == null) {
+    if (_itemNameController.text.isEmpty || _initialStock <= 0 || _unitPriceController.text.isEmpty || _modalPriceController.text.isEmpty || _selectedKategori == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua field harus diisi dan jumlah tidak boleh nol!')),
+        const SnackBar(content: Text('Semua field harus diisi dan stok awal harus lebih dari nol!')),
       );
       return;
     }
 
     final barangBaru = Barang(
       namaBarang: _itemNameController.text,
-      stok: _quantity,
+      stokAwal: _initialStock,
+      stokSaatIni: _initialStock,
       harga: double.tryParse(_unitPriceController.text) ?? 0.0,
       hargaModal: double.tryParse(_modalPriceController.text) ?? 0.0,
       idKategori: _selectedKategori!.id,
     );
 
-    await Provider.of<StockController>(context, listen: false).addBarang(barangBaru);
+    // <-- UBAH DI SINI: Meneruskan context
+    await Provider.of<StockController>(context, listen: false).addBarang(context, barangBaru);
 
     if (mounted) {
       showDialog(context: context, builder: (context) => const TransactionSuccessDialog());
@@ -97,7 +98,7 @@ class _AddNewItemFormState extends State<AddNewItemForm> {
       _unitPriceController.clear();
       _modalPriceController.clear();
       setState(() {
-        _quantity = 0;
+        _initialStock = 0;
         _selectedKategori = null;
       });
     }
@@ -188,7 +189,7 @@ class _AddNewItemFormState extends State<AddNewItemForm> {
             ),
             const SizedBox(height: 20),
 
-            Text('Jumlah', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF1D4A4B))),
+            Text('Stok Awal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF1D4A4B))),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
@@ -203,14 +204,14 @@ class _AddNewItemFormState extends State<AddNewItemForm> {
                     icon: const Icon(Icons.remove, color: Color(0xFF1D4A4B)),
                     onPressed: () {
                       setState(() {
-                        if (_quantity > 0) {
-                          _quantity--;
+                        if (_initialStock > 0) {
+                          _initialStock--;
                         }
                       });
                     },
                   ),
                   Text(
-                    '$_quantity',
+                    '$_initialStock',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -221,7 +222,7 @@ class _AddNewItemFormState extends State<AddNewItemForm> {
                     icon: const Icon(Icons.add, color: Color(0xFF1D4A4B)),
                     onPressed: () {
                       setState(() {
-                        _quantity++;
+                        _initialStock++;
                       });
                     },
                   ),

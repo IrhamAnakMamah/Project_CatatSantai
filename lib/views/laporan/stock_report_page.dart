@@ -86,7 +86,7 @@ class _StockReportPageState extends State<StockReportPage> {
                 itemCount: filteredList.length,
                 itemBuilder: (context, index) {
                   final barang = filteredList[index];
-                  final bool isOutOfStock = barang.stok == 0;
+                  final bool isOutOfStock = barang.stokSaatIni == 0; // UBAH: Menggunakan stokSaatIni
                   return Opacity(
                     opacity: isOutOfStock ? 0.5 : 1.0,
                     child: Padding(
@@ -98,7 +98,7 @@ class _StockReportPageState extends State<StockReportPage> {
                             children: [
                               Text(barang.namaBarang, style: TextStyle(fontSize: 16, color: const Color(0xFF1D4A4B))),
                               Text(
-                                isOutOfStock ? 'Habis' : '${barang.stok} Unit',
+                                isOutOfStock ? 'Habis' : '${barang.stokSaatIni} Unit', // UBAH: Menggunakan stokSaatIni
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: isOutOfStock ? Colors.red[700] : const Color(0xFF1D4A4B),

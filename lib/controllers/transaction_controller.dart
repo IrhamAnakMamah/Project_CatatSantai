@@ -6,6 +6,7 @@ import '../models/detail_transaksi_model.dart';
 import '../services/sqlite_service.dart';
 import 'auth_controller.dart';
 import 'stock_controller.dart';
+import 'report_controller.dart'; // Pastikan ini diimpor jika belum
 
 class TransactionController extends ChangeNotifier {
   final SqliteService _sqliteService = SqliteService.instance;
@@ -32,24 +33,25 @@ class TransactionController extends ChangeNotifier {
         final int barangId = entry.key;
         final int jumlah = entry.value;
 
-        final Barang barang = stockController.barangList.firstWhere((b) => b.id == barangId);
+        // Mendapatkan objek Barang dari daftar barang di StockController
+        // Pastikan barang dengan ID ini ada sebelum melanjutkan
+        final Barang barang = stockController.barangList.firstWhere(
+              (b) => b.id == barangId,
+          orElse: () => throw Exception('Barang dengan ID $barangId tidak ditemukan.'),
+        );
 
         final double subtotal = barang.harga * jumlah;
         grandTotal += subtotal;
 
-        // === PERBAIKAN: Hitung keuntungan di sini ===
         final double keuntunganPerItem = barang.harga - barang.hargaModal;
         final double totalKeuntunganItem = keuntunganPerItem * jumlah;
-        // ===========================================
 
         details.add(DetailTransaksi(
           idBarang: barangId,
           jumlah: jumlah,
           hargaSatuan: barang.harga,
           subtotal: subtotal,
-          // === PERBAIKAN: Sertakan parameter 'keuntungan' ===
           keuntungan: totalKeuntunganItem,
-          // ================================================
         ));
       }
 
@@ -66,6 +68,9 @@ class TransactionController extends ChangeNotifier {
 
       // Setelah berhasil, refresh daftar stok di StockController
       await stockController.fetchBarang();
+      // Refresh laporan di ReportController juga
+      Provider.of<ReportController>(context, listen: false).fetchLaporan();
+
 
     } catch (e) {
       _isLoading = false;

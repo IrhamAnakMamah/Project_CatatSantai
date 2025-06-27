@@ -169,7 +169,7 @@ class _TransactionPageState extends State<TransactionPage> {
               ),
             ),
 
-            // Daftar Barang (tidak ada perubahan)
+            // Daftar Barang (perubahan di sini)
             Expanded(
               child: Consumer<StockController>(
                 builder: (context, stockController, child) {
@@ -184,10 +184,10 @@ class _TransactionPageState extends State<TransactionPage> {
                     return matchesSearch && matchesCategory;
                   }).toList();
 
-                  // Sorting: barang dengan stok > 0 akan di atas
+                  // Sorting: barang dengan stokSaatIni > 0 akan di atas
                   filteredList.sort((a, b) {
-                    if (a.stok > 0 && b.stok == 0) return -1; // a comes first
-                    if (a.stok == 0 && b.stok > 0) return 1;  // b comes first
+                    if (a.stokSaatIni > 0 && b.stokSaatIni == 0) return -1; // a comes first
+                    if (a.stokSaatIni == 0 && b.stokSaatIni > 0) return 1;  // b comes first
                     return a.namaBarang.compareTo(b.namaBarang); // sort by name if stock status is same
                   });
                   // ===========================================
@@ -204,7 +204,7 @@ class _TransactionPageState extends State<TransactionPage> {
                       final int selectedQuantity = _selectedItems[barang.id!] ?? 0;
 
                       // === PERUBAHAN UI: Menambahkan logika untuk barang habis ===
-                      final bool isOutOfStock = barang.stok == 0;
+                      final bool isOutOfStock = barang.stokSaatIni == 0; // Menggunakan stokSaatIni
                       // =========================================================
 
                       return Opacity(
@@ -223,7 +223,7 @@ class _TransactionPageState extends State<TransactionPage> {
                                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                       Text(barang.namaBarang, style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF1D4A4B))),
                                       const SizedBox(height: 4),
-                                      Text('Stok tersedia: ${barang.stok}', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                                      Text('Stok tersedia: ${barang.stokSaatIni}', style: TextStyle(fontSize: 14, color: Colors.grey[600])), // Menggunakan stokSaatIni
                                     ])),
                                     Container(
                                       decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),

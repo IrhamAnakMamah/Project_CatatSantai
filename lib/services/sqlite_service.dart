@@ -60,12 +60,14 @@ class SqliteService {
 
 
     // --- PERUBAHAN SKEMA TABEL BARANG ---
+    // Menambahkan stok_awal dan mengubah stok menjadi stok_saat_ini
     await db.execute('''
     CREATE TABLE barang (
       id_barang $idType,
       id_kategori INTEGER,
       nama_barang $textType,
-      stok $intType,
+      stok_awal $intType,      -- <-- BARU
+      stok_saat_ini $intType,   -- <-- UBAH
       harga $realType,
       harga_modal $realType,
       FOREIGN KEY (id_kategori) REFERENCES kategori (id_kategori) ON DELETE SET NULL
@@ -144,6 +146,7 @@ class SqliteService {
   }
 
   /// Menyimpan barang baru ke dalam tabel 'barang'.
+  // Metode ini akan menggunakan toMap() dari model Barang yang sudah diperbarui
   Future<Barang> createBarang(Barang barang) async {
     final db = await instance.database;
     final id = await db.insert('barang', barang.toMap());
@@ -151,12 +154,14 @@ class SqliteService {
   }
 
   /// Mengambil satu barang spesifik berdasarkan ID-nya.
+  // Metode ini akan menggunakan fromMap() dari model Barang yang sudah diperbarui
   Future<Barang> getBarangById(int id) async {
     final db = await instance.database;
     final maps = await db.query(
-      'barang',
-      where: 'id_barang = ?',
-      whereArgs: [id],
+        'barang',
+        where: 'id_barang = ?',
+        whereArgs: [id],
+        columns: ['id_barang', 'id_kategori', 'nama_barang', 'stok_awal', 'stok_saat_ini', 'harga', 'harga_modal'] // Menambahkan kolom baru
     );
 
     if (maps.isNotEmpty) {
@@ -167,6 +172,7 @@ class SqliteService {
   }
 
   /// Mengambil semua barang dari database, diurutkan berdasarkan nama.
+  // Metode ini akan menggunakan fromMap() dari model Barang yang sudah diperbarui
   Future<List<Barang>> getAllBarang() async {
     final db = await instance.database;
     final result = await db.query('barang', orderBy: 'nama_barang ASC');
@@ -174,6 +180,7 @@ class SqliteService {
   }
 
   /// Memperbarui data barang yang ada di database.
+  // Metode ini akan menggunakan toMap() dari model Barang yang sudah diperbarui
   Future<int> updateBarang(Barang barang) async {
     final db = await instance.database;
     return db.update(
@@ -208,21 +215,21 @@ class SqliteService {
         // 3. Simpan detail transaksi dengan ID header yang baru saja didapat
         await txn.insert('detail_transaksi', detail.toMapWithTransactionId(idTransaksi));
 
-        // 4. Ambil data barang saat ini untuk mendapatkan stok terakhir
+        // 4. Ambil data barang saat ini untuk mendapatkan stok terakhir (stok_saat_ini)
         final barangResult = await txn.query('barang', where: 'id_barang = ?', whereArgs: [detail.idBarang]);
 
         if (barangResult.isNotEmpty) {
           final barang = Barang.fromMap(barangResult.first);
 
           // Error handling: Pastikan stok cukup sebelum mengurangi
-          if (barang.stok < detail.jumlah) {
+          if (barang.stokSaatIni < detail.jumlah) { // <--- UBAH: Menggunakan stokSaatIni
             // Jika stok tidak cukup, batalkan seluruh transaksi dengan melempar error
             throw Exception('Stok untuk ${barang.namaBarang} tidak mencukupi.');
           }
 
-          final stokBaru = barang.stok - detail.jumlah;
-          // 5. Update stok barang di database
-          await txn.update('barang', {'stok': stokBaru}, where: 'id_barang = ?', whereArgs: [detail.idBarang]);
+          final stokBaru = barang.stokSaatIni - detail.jumlah; // <--- UBAH: Mengurangi stokSaatIni
+          // 5. Update stok_saat_ini barang di database
+          await txn.update('barang', {'stok_saat_ini': stokBaru}, where: 'id_barang = ?', whereArgs: [detail.idBarang]); // <--- UBAH: Update stok_saat_ini
         } else {
           // Jika karena suatu alasan barang tidak ditemukan, batalkan transaksi
           throw Exception('Barang dengan ID ${detail.idBarang} tidak ditemukan.');
@@ -289,7 +296,7 @@ class SqliteService {
     final db = await instance.database;
 
     await db.transaction((txn) async {
-      // 1. Ambil data barang saat ini untuk mendapatkan stok terakhir
+      // 1. Ambil data barang saat ini untuk mendapatkan stok_saat_ini
       final barangSaatIni = await txn.query(
         'barang',
         where: 'id_barang = ?',
@@ -300,12 +307,12 @@ class SqliteService {
         throw Exception('Barang tidak ditemukan untuk di-restock.');
       }
 
-      // 2. Hitung stok baru dan update ke database
-      final stokLama = barangSaatIni.first['stok'] as int;
-      final stokBaru = stokLama + jumlahTambah;
+      // 2. Hitung stok baru dan update ke database (hanya stok_saat_ini)
+      final stokLamaSaatIni = barangSaatIni.first['stok_saat_ini'] as int; // <--- UBAH: Menggunakan stok_saat_ini
+      final stokBaruSaatIni = stokLamaSaatIni + jumlahTambah;
       await txn.update(
         'barang',
-        {'stok': stokBaru},
+        {'stok_saat_ini': stokBaruSaatIni}, // <--- UBAH: Update stok_saat_ini
         where: 'id_barang = ?',
         whereArgs: [idBarang],
       );

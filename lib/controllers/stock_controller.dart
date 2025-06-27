@@ -28,19 +28,42 @@ class StockController extends ChangeNotifier {
     try {
       _barangList = await _sqliteService.getAllBarang();
     } catch (e) {
-      print("Error saat fetchBarang: $e");
+      print("Error saat fetchBarang di StockController: $e"); // Menambahkan log yang lebih spesifik
       _barangList = []; // Kosongkan daftar jika terjadi error
     }
     _setLoading(false);
   }
 
   /// Menambahkan barang baru ke database, lalu memuat ulang daftar barang.
-  Future<void> addBarang(Barang barang) async {
+  // Menerima BuildContext untuk mengakses AuthController dan ReportController
+  Future<void> addBarang(BuildContext context, Barang barang) async { // <-- UBAH: Menambahkan BuildContext
     _setLoading(true);
-    await _sqliteService.createBarang(barang);
-    // Setelah menambah, panggil fetchBarang() untuk mendapatkan daftar terbaru
-    // yang sudah terurut dan menyertakan data baru.
-    await fetchBarang();
+    try {
+      final Barang newBarangWithId = await _sqliteService.createBarang(barang); // Tangkap barang dengan ID yang dihasilkan
+
+      // --- LOGIKA BARU UNTUK PENGELUARAN SAAT TAMBAH BARANG ---
+      final authController = Provider.of<AuthController>(context, listen: false);
+      if (authController.currentUser == null) {
+        throw Exception('Pengguna belum login atau data pengguna tidak tersedia.');
+      }
+      final idPengguna = authController.currentUser!.id!;
+
+      final double totalBiayaPengadaan = newBarangWithId.stokAwal * newBarangWithId.hargaModal;
+      await _sqliteService.createPembelian( // Mereuse createPembelian untuk mencatat pengeluaran
+        idBarang: newBarangWithId.id!,
+        jumlahTambah: newBarangWithId.stokAwal, // Jumlah yang dibeli adalah stok awal
+        totalBiaya: totalBiayaPengadaan,
+        idPengguna: idPengguna,
+      );
+      // --- AKHIR LOGIKA PENGELUARAN ---
+
+      await fetchBarang(); // Muat ulang daftar barang
+      Provider.of<ReportController>(context, listen: false).fetchLaporan(); // Perbarui laporan keuangan
+    } catch (e) {
+      _setLoading(false);
+      rethrow;
+    }
+    _setLoading(false);
   }
 
   /// Mengupdate barang yang ada di database, lalu memuat ulang daftar barang.
@@ -55,6 +78,8 @@ class StockController extends ChangeNotifier {
     _setLoading(true);
     await _sqliteService.deleteBarang(id);
     await fetchBarang();
+    // Pemberitahuan ReportController akan dilakukan saat restockBarang atau saat halaman laporan dibuka
+    // karena deleteBarang tidak memiliki BuildContext untuk Provider.of secara langsung.
   }
 
   // Fungsi helper internal untuk mengelola state loading dan memberitahu UI
@@ -72,14 +97,11 @@ class StockController extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      // Dapatkan id pengguna yang sedang login dari AuthController
       final authController = Provider.of<AuthController>(context, listen: false);
-      // === PERBAIKAN DIMULAI ===
       if (authController.currentUser == null) {
         throw Exception('Pengguna belum login atau data pengguna tidak tersedia.');
       }
       final idPengguna = authController.currentUser!.id!;
-      // === PERBAIKAN BERAKHIR ===
 
       await _sqliteService.createPembelian(
         idBarang: idBarang,
@@ -88,7 +110,7 @@ class StockController extends ChangeNotifier {
         idPengguna: idPengguna,
       );
 
-      // Setelah berhasil, muat ulang daftar barang dan data laporan
+      // Setelah berhasil, muat ulang daftar barang
       await fetchBarang();
       // Memberitahu ReportController untuk memuat ulang data juga
       Provider.of<ReportController>(context, listen: false).fetchLaporan();

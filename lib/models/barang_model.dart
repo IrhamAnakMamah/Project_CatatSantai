@@ -1,8 +1,8 @@
 class Barang {
   final int? id;
   final String namaBarang;
-  final int stokAwal;      // <-- BARU: Stok awal
-  final int stokSaatIni;   // <-- UBAH: Menggantikan 'stok' yang lama
+  final int stokAwal;
+  final int stokSaatIni;
   final double harga;
   final double hargaModal;
   final int? idKategori;
@@ -10,8 +10,8 @@ class Barang {
   Barang({
     this.id,
     required this.namaBarang,
-    required this.stokAwal,      // <-- BARU
-    required this.stokSaatIni,   // <-- UBAH
+    required this.stokAwal,
+    required this.stokSaatIni,
     required this.harga,
     required this.hargaModal,
     this.idKategori,
@@ -20,8 +20,8 @@ class Barang {
   Barang copyWith({
     int? id,
     String? namaBarang,
-    int? stokAwal,      // <-- BARU
-    int? stokSaatIni,   // <-- UBAH
+    int? stokAwal,
+    int? stokSaatIni,
     double? harga,
     double? hargaModal,
     int? idKategori,
@@ -29,8 +29,8 @@ class Barang {
     return Barang(
       id: id ?? this.id,
       namaBarang: namaBarang ?? this.namaBarang,
-      stokAwal: stokAwal ?? this.stokAwal,      // <-- BARU
-      stokSaatIni: stokSaatIni ?? this.stokSaatIni, // <-- UBAH
+      stokAwal: stokAwal ?? this.stokAwal,
+      stokSaatIni: stokSaatIni ?? this.stokSaatIni,
       harga: harga ?? this.harga,
       hargaModal: hargaModal ?? this.hargaModal,
       idKategori: idKategori ?? this.idKategori,
@@ -41,8 +41,8 @@ class Barang {
     return {
       'id_barang': id,
       'nama_barang': namaBarang,
-      'stok_awal': stokAwal,      // <-- BARU
-      'stok_saat_ini': stokSaatIni, // <-- UBAH
+      'stok_awal': stokAwal,
+      'stok_saat_ini': stokSaatIni,
       'harga': harga,
       'harga_modal': hargaModal,
       'id_kategori': idKategori,
@@ -53,8 +53,9 @@ class Barang {
     return Barang(
       id: map['id_barang'],
       namaBarang: map['nama_barang'],
-      stokAwal: map['stok_awal'],      // <-- BARU
-      stokSaatIni: map['stok_saat_ini'], // <-- UBAH
+      // PERBAIKAN DI SINI: Gunakan 'as int? ?? 0' untuk menangani null dari DB lama
+      stokAwal: map['stok_awal'] as int? ?? 0,
+      stokSaatIni: map['stok_saat_ini'] as int? ?? 0,
       harga: (map['harga'] as num).toDouble(),
       hargaModal: (map['harga_modal'] as num).toDouble(),
       idKategori: map['id_kategori'],

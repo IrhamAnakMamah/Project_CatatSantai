@@ -13,36 +13,28 @@ class RestockForm extends StatefulWidget {
 
 class _RestockFormState extends State<RestockForm> {
   Barang? _selectedBarang;
-  final _jumlahTambahController = TextEditingController();
-  // final _totalBiayaController = TextEditingController(); // Hapus controller ini
+  int _quantityToRestock = 0; // Menggunakan int untuk jumlah stok
+  // Hapus: final _totalBiayaController = TextEditingController();
 
   @override
   void dispose() {
-    _jumlahTambahController.dispose();
-    // _totalBiayaController.dispose(); // Hapus dispose untuk controller ini
+    // Hapus: _totalBiayaController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
-    if (_selectedBarang == null || _jumlahTambahController.text.isEmpty) { // Hapus validasi totalBiayaController
+    if (_selectedBarang == null || _quantityToRestock <= 0) { // Hapus validasi totalBiayaController
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pilih barang dan masukkan jumlah stok yang ditambah!')),
       );
       return;
     }
 
-    final int jumlahTambah = int.tryParse(_jumlahTambahController.text) ?? 0;
-    if (jumlahTambah <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Jumlah stok yang ditambah harus lebih dari nol!')),
-      );
-      return;
-    }
-
+    final int jumlahTambah = _quantityToRestock;
     // Hitung totalBiaya secara otomatis
     // Gunakan hargaModal dari barang yang dipilih
     final double hargaModalPerUnit = _selectedBarang!.hargaModal;
-    final double totalBiaya = hargaModalPerUnit * jumlahTambah;
+    final double totalBiaya = hargaModalPerUnit * jumlahTambah; // Hitung otomatis
 
     final stockController = Provider.of<StockController>(context, listen: false);
 
@@ -56,11 +48,9 @@ class _RestockFormState extends State<RestockForm> {
 
       if (mounted) {
         showDialog(context: context, builder: (context) => const TransactionSuccessDialog());
-        // Reset form
         setState(() {
           _selectedBarang = null;
-          _jumlahTambahController.clear();
-          // _totalBiayaController.clear(); // Hapus clear untuk controller ini
+          _quantityToRestock = 0; // Reset jumlah
         });
       }
     } catch (e) {
@@ -79,7 +69,7 @@ class _RestockFormState extends State<RestockForm> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Pilih Barang untuk Ditambah Stoknya', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF1D4A4B))),
+            Text('Pilih Barang untuk Restock', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF1D4A4B))),
             const SizedBox(height: 8),
             DropdownButtonFormField<Barang>(
               value: _selectedBarang,
@@ -94,6 +84,8 @@ class _RestockFormState extends State<RestockForm> {
               onChanged: (barang) {
                 setState(() {
                   _selectedBarang = barang;
+                  // Reset jumlah restock saat barang berubah
+                  _quantityToRestock = 0;
                 });
               },
               decoration: InputDecoration(
@@ -114,31 +106,50 @@ class _RestockFormState extends State<RestockForm> {
             ),
             const SizedBox(height: 20),
 
+            // Kontrol Plus/Minus untuk Jumlah Stok
             Text('Jumlah Stok yang Ditambah', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF1D4A4B))),
             const SizedBox(height: 8),
-            TextField(
-              controller: _jumlahTambahController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: 'Masukkan jumlah tambahan',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: const Color(0xFF4FC0BD), width: 1.5),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: const Color(0xFF4FC0BD).withOpacity(0.7), width: 1.0),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: const Color(0xFF1D4A4B), width: 2.0),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF4FC0BD).withOpacity(0.7), width: 1.0),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove, color: Color(0xFF1D4A4B)),
+                    onPressed: _selectedBarang == null ? null : () {
+                      setState(() {
+                        if (_quantityToRestock > 0) {
+                          _quantityToRestock--;
+                        }
+                      });
+                    },
+                  ),
+                  Text(
+                    '$_quantityToRestock',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1D4A4B),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Color(0xFF1D4A4B)),
+                    onPressed: _selectedBarang == null ? null : () {
+                      setState(() {
+                        _quantityToRestock++;
+                      });
+                    },
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 40),
 
-            // Bagian "Total Harga Pembelian" dihapus dari sini
+            // Hapus: Input untuk Total Biaya Restock
 
             Align(
               alignment: Alignment.centerRight,
@@ -147,18 +158,18 @@ class _RestockFormState extends State<RestockForm> {
                   return controller.isLoading
                       ? const CircularProgressIndicator()
                       : ElevatedButton(
-                    onPressed: _handleSubmit,
+                    onPressed: (_selectedBarang == null || _quantityToRestock <= 0) ? null : _handleSubmit, // Hapus validasi totalBiayaController.text.isEmpty
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A8EEB), // Warna biru
+                      backgroundColor: const Color(0xFF6A8EEB),
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                       elevation: 5,
-                      minimumSize: const Size.fromHeight(50), // Lebar penuh
+                      minimumSize: const Size.fromHeight(50),
                     ),
                     child: Text(
-                      'Simpan',
+                      'Simpan', // Mengubah teks tombol menjadi 'Simpan'
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

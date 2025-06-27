@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/report_controller.dart';
+import '../laporan/report_details_dialog.dart'; // Impor dialog detail laporan yang akan kita buat
 
 class FinancialReportPageContent extends StatelessWidget {
   const FinancialReportPageContent({super.key});
@@ -80,6 +81,42 @@ class FinancialReportPageContent extends StatelessWidget {
                     amountColor: const Color(0xFF6AC0BD),
                   ),
                   const Divider(height: 30, thickness: 1, color: Colors.grey),
+                  const SizedBox(height: 30), // Spasi sebelum tombol
+
+                  // Tombol "Lihat Detail Laporan"
+                  Align(
+                    alignment: Alignment.center, // Pusatkan tombol
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Tampilkan dialog detail laporan
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) {
+                            return ReportDetailsDialog(
+                              transactions: controller.transactions, // Meneruskan daftar transaksi
+                              period: controller.selectedPeriod,
+                            );
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6A8EEB), // Warna biru tombol
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 5,
+                      ),
+                      child: Text(
+                        'Lihat Detail Laporan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
           ],
