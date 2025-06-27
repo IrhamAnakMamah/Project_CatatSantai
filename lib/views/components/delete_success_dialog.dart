@@ -50,12 +50,7 @@ class DeleteSuccessDialog extends StatelessWidget {
                   alignment: Alignment.bottomCenter,
                   child: ElevatedButton(
                     onPressed: () {
-                      // Tutup dialog dan kembali ke halaman StockPage (atau refresh)
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => const StockPage()), // Kembali ke StockPage
-                            (Route<dynamic> route) => false, // Hapus semua rute sebelumnya
-                      );
+                      Navigator.of(context).pop(); // Cukup tutup dialog ini
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6A8EEB), // Warna biru tombol

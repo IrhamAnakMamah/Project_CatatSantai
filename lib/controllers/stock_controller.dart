@@ -74,7 +74,12 @@ class StockController extends ChangeNotifier {
     try {
       // Dapatkan id pengguna yang sedang login dari AuthController
       final authController = Provider.of<AuthController>(context, listen: false);
+      // === PERBAIKAN DIMULAI ===
+      if (authController.currentUser == null) {
+        throw Exception('Pengguna belum login atau data pengguna tidak tersedia.');
+      }
       final idPengguna = authController.currentUser!.id!;
+      // === PERBAIKAN BERAKHIR ===
 
       await _sqliteService.createPembelian(
         idBarang: idBarang,

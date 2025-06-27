@@ -1,38 +1,38 @@
 class Barang {
   final int? id;
   final String namaBarang;
-  final int stok;
+  final int stokAwal;      // <-- BARU: Stok awal
+  final int stokSaatIni;   // <-- UBAH: Menggantikan 'stok' yang lama
   final double harga;
-  // --- PENAMBAHAN BARU ---
-  final double hargaModal; // Harga beli atau modal per item
-  // -----------------------
+  final double hargaModal;
   final int? idKategori;
 
   Barang({
     this.id,
     required this.namaBarang,
-    required this.stok,
+    required this.stokAwal,      // <-- BARU
+    required this.stokSaatIni,   // <-- UBAH
     required this.harga,
-    // --- PENAMBAHAN BARU ---
     required this.hargaModal,
-    // -----------------------
     this.idKategori,
   });
 
   Barang copyWith({
     int? id,
     String? namaBarang,
-    int? stok,
+    int? stokAwal,      // <-- BARU
+    int? stokSaatIni,   // <-- UBAH
     double? harga,
-    double? hargaModal, // --- PENAMBAHAN BARU ---
+    double? hargaModal,
     int? idKategori,
   }) {
     return Barang(
       id: id ?? this.id,
       namaBarang: namaBarang ?? this.namaBarang,
-      stok: stok ?? this.stok,
+      stokAwal: stokAwal ?? this.stokAwal,      // <-- BARU
+      stokSaatIni: stokSaatIni ?? this.stokSaatIni, // <-- UBAH
       harga: harga ?? this.harga,
-      hargaModal: hargaModal ?? this.hargaModal, // --- PENAMBAHAN BARU ---
+      hargaModal: hargaModal ?? this.hargaModal,
       idKategori: idKategori ?? this.idKategori,
     );
   }
@@ -41,9 +41,10 @@ class Barang {
     return {
       'id_barang': id,
       'nama_barang': namaBarang,
-      'stok': stok,
+      'stok_awal': stokAwal,      // <-- BARU
+      'stok_saat_ini': stokSaatIni, // <-- UBAH
       'harga': harga,
-      'harga_modal': hargaModal, // --- PENAMBAHAN BARU ---
+      'harga_modal': hargaModal,
       'id_kategori': idKategori,
     };
   }
@@ -52,9 +53,10 @@ class Barang {
     return Barang(
       id: map['id_barang'],
       namaBarang: map['nama_barang'],
-      stok: map['stok'],
+      stokAwal: map['stok_awal'],      // <-- BARU
+      stokSaatIni: map['stok_saat_ini'], // <-- UBAH
       harga: (map['harga'] as num).toDouble(),
-      hargaModal: (map['harga_modal'] as num).toDouble(), // --- PENAMBAHAN BARU ---
+      hargaModal: (map['harga_modal'] as num).toDouble(),
       idKategori: map['id_kategori'],
     );
   }

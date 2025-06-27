@@ -30,7 +30,6 @@ class _EditStockFormState extends State<EditStockForm> {
     super.dispose();
   }
 
-  // Fungsi untuk menangani penyimpanan perubahan
   Future<void> _handleSubmit() async {
     // Jangan lakukan apa-apa jika tidak ada barang yang dipilih
     if (_selectedBarang == null) return;
