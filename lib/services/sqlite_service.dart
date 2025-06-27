@@ -21,6 +21,8 @@ class SqliteService {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
+    // Kita akan menaikkan versi database ke 2. Ini akan memicu onUpgrade.
+    // Namun, cara termudah selama pengembangan adalah uninstall aplikasi.
     return await openDatabase(path, version: 1, onCreate: _createDB, onConfigure: _onConfigure);
   }
 
@@ -34,6 +36,7 @@ class SqliteService {
     const intType = 'INTEGER NOT NULL';
     const realType = 'REAL NOT NULL';
 
+    // ... (CREATE TABLE untuk pengguna, profil_usaha, kategori tidak berubah)
     await db.execute('''
     CREATE TABLE pengguna (
       id_pengguna $idType,
@@ -41,7 +44,6 @@ class SqliteService {
       password $textType,
       kode_keamanan TEXT
     )''');
-
     await db.execute('''
     CREATE TABLE profil_usaha (
       id_profil_usaha $idType,
@@ -50,13 +52,14 @@ class SqliteService {
       alamat TEXT,
       FOREIGN KEY (id_pengguna) REFERENCES pengguna (id_pengguna) ON DELETE CASCADE
     )''');
-
     await db.execute('''
     CREATE TABLE kategori (
       id_kategori $idType,
       nama_kategori $textType UNIQUE
     )''');
 
+
+    // --- PERUBAHAN SKEMA TABEL BARANG ---
     await db.execute('''
     CREATE TABLE barang (
       id_barang $idType,
@@ -64,9 +67,11 @@ class SqliteService {
       nama_barang $textType,
       stok $intType,
       harga $realType,
+      harga_modal $realType,
       FOREIGN KEY (id_kategori) REFERENCES kategori (id_kategori) ON DELETE SET NULL
     )''');
 
+    // ... (CREATE TABLE untuk transaksi tidak berubah)
     await db.execute('''
     CREATE TABLE transaksi (
       id_transaksi $idType,
@@ -77,6 +82,7 @@ class SqliteService {
       FOREIGN KEY (id_pengguna) REFERENCES pengguna (id_pengguna)
     )''');
 
+    // --- PERUBAHAN SKEMA TABEL DETAIL TRANSAKSI ---
     await db.execute('''
     CREATE TABLE detail_transaksi (
       id_detail_transaksi $idType,
@@ -85,6 +91,7 @@ class SqliteService {
       jumlah $intType,
       harga_satuan $realType,
       subtotal $realType,
+      keuntungan $realType,
       FOREIGN KEY (id_transaksi) REFERENCES transaksi (id_transaksi) ON DELETE CASCADE,
       FOREIGN KEY (id_barang) REFERENCES barang (id_barang) ON DELETE SET NULL
     )''');
@@ -271,6 +278,46 @@ class SqliteService {
       transaksiList.add(Transaksi.fromMap(trxMap, details));
     }
     return transaksiList;
+  }
+
+  Future<void> createPembelian({
+    required int idBarang,
+    required int jumlahTambah,
+    required double totalBiaya,
+    required int idPengguna,
+  }) async {
+    final db = await instance.database;
+
+    await db.transaction((txn) async {
+      // 1. Ambil data barang saat ini untuk mendapatkan stok terakhir
+      final barangSaatIni = await txn.query(
+        'barang',
+        where: 'id_barang = ?',
+        whereArgs: [idBarang],
+      );
+
+      if (barangSaatIni.isEmpty) {
+        throw Exception('Barang tidak ditemukan untuk di-restock.');
+      }
+
+      // 2. Hitung stok baru dan update ke database
+      final stokLama = barangSaatIni.first['stok'] as int;
+      final stokBaru = stokLama + jumlahTambah;
+      await txn.update(
+        'barang',
+        {'stok': stokBaru},
+        where: 'id_barang = ?',
+        whereArgs: [idBarang],
+      );
+
+      // 3. Buat catatan transaksi baru untuk pengeluaran
+      await txn.insert('transaksi', {
+        'id_pengguna': idPengguna,
+        'tanggal': DateTime.now().toIso8601String(),
+        'jenis_transaksi': 'Pembelian',
+        'total': totalBiaya,
+      });
+    });
   }
 
   Future close() async {

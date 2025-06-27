@@ -3,6 +3,9 @@ class Barang {
   final String namaBarang;
   final int stok;
   final double harga;
+  // --- PENAMBAHAN BARU ---
+  final double hargaModal; // Harga beli atau modal per item
+  // -----------------------
   final int? idKategori;
 
   Barang({
@@ -10,6 +13,9 @@ class Barang {
     required this.namaBarang,
     required this.stok,
     required this.harga,
+    // --- PENAMBAHAN BARU ---
+    required this.hargaModal,
+    // -----------------------
     this.idKategori,
   });
 
@@ -18,15 +24,18 @@ class Barang {
     String? namaBarang,
     int? stok,
     double? harga,
+    double? hargaModal, // --- PENAMBAHAN BARU ---
     int? idKategori,
-  }) =>
-      Barang(
-        id: id ?? this.id,
-        namaBarang: namaBarang ?? this.namaBarang,
-        stok: stok ?? this.stok,
-        harga: harga ?? this.harga,
-        idKategori: idKategori ?? this.idKategori,
-      );
+  }) {
+    return Barang(
+      id: id ?? this.id,
+      namaBarang: namaBarang ?? this.namaBarang,
+      stok: stok ?? this.stok,
+      harga: harga ?? this.harga,
+      hargaModal: hargaModal ?? this.hargaModal, // --- PENAMBAHAN BARU ---
+      idKategori: idKategori ?? this.idKategori,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -34,6 +43,7 @@ class Barang {
       'nama_barang': namaBarang,
       'stok': stok,
       'harga': harga,
+      'harga_modal': hargaModal, // --- PENAMBAHAN BARU ---
       'id_kategori': idKategori,
     };
   }
@@ -43,7 +53,8 @@ class Barang {
       id: map['id_barang'],
       namaBarang: map['nama_barang'],
       stok: map['stok'],
-      harga: map['harga'].toDouble(), // Pastikan konversi ke double
+      harga: (map['harga'] as num).toDouble(),
+      hargaModal: (map['harga_modal'] as num).toDouble(), // --- PENAMBAHAN BARU ---
       idKategori: map['id_kategori'],
     );
   }

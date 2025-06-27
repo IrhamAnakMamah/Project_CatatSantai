@@ -22,30 +22,34 @@ class TransactionController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Mengambil controller lain menggunakan Provider
       final authController = Provider.of<AuthController>(context, listen: false);
       final stockController = Provider.of<StockController>(context, listen: false);
 
-      // 1. Siapkan data untuk disimpan
       double grandTotal = 0;
       List<DetailTransaksi> details = [];
 
-      // Loop melalui setiap item di keranjang untuk membuat detail dan menghitung total
       for (var entry in selectedItems.entries) {
         final int barangId = entry.key;
         final int jumlah = entry.value;
 
-        // Ambil data barang dari StockController agar tidak query ulang ke db
         final Barang barang = stockController.barangList.firstWhere((b) => b.id == barangId);
 
         final double subtotal = barang.harga * jumlah;
         grandTotal += subtotal;
+
+        // === PERBAIKAN: Hitung keuntungan di sini ===
+        final double keuntunganPerItem = barang.harga - barang.hargaModal;
+        final double totalKeuntunganItem = keuntunganPerItem * jumlah;
+        // ===========================================
 
         details.add(DetailTransaksi(
           idBarang: barangId,
           jumlah: jumlah,
           hargaSatuan: barang.harga,
           subtotal: subtotal,
+          // === PERBAIKAN: Sertakan parameter 'keuntungan' ===
+          keuntungan: totalKeuntunganItem,
+          // ================================================
         ));
       }
 
@@ -57,14 +61,13 @@ class TransactionController extends ChangeNotifier {
         total: grandTotal,
       );
 
-      // 2. Panggil DAO untuk menyimpan semuanya ke database
+      // Panggil DAO untuk menyimpan semuanya ke database
       await _sqliteService.createTransaksi(newTransaction, details);
 
-      // 3. Setelah berhasil, refresh daftar stok di StockController
+      // Setelah berhasil, refresh daftar stok di StockController
       await stockController.fetchBarang();
 
     } catch (e) {
-      // Jika terjadi error (misal stok tidak cukup), lemparkan kembali
       _isLoading = false;
       notifyListeners();
       rethrow;

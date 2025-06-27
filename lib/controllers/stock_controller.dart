@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/barang_model.dart';
 import '../services/sqlite_service.dart';
+import 'report_controller.dart';
+import 'auth_controller.dart';
 
 class StockController extends ChangeNotifier {
   final SqliteService _sqliteService = SqliteService.instance;
@@ -58,5 +61,38 @@ class StockController extends ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners(); // Ini adalah perintah kunci untuk memberitahu UI agar refresh
+  }
+
+  Future<void> restockBarang({
+    required BuildContext context,
+    required int idBarang,
+    required int jumlahTambah,
+    required double totalBiaya,
+  }) async {
+    _setLoading(true);
+
+    try {
+      // Dapatkan id pengguna yang sedang login dari AuthController
+      final authController = Provider.of<AuthController>(context, listen: false);
+      final idPengguna = authController.currentUser!.id!;
+
+      await _sqliteService.createPembelian(
+        idBarang: idBarang,
+        jumlahTambah: jumlahTambah,
+        totalBiaya: totalBiaya,
+        idPengguna: idPengguna,
+      );
+
+      // Setelah berhasil, muat ulang daftar barang dan data laporan
+      await fetchBarang();
+      // Memberitahu ReportController untuk memuat ulang data juga
+      Provider.of<ReportController>(context, listen: false).fetchLaporan();
+
+    } catch (e) {
+      _setLoading(false);
+      rethrow;
+    }
+
+    _setLoading(false);
   }
 }
