@@ -2,6 +2,7 @@
 import '../models/kategori_model.dart';
 import '../models/pengguna_model.dart';
 import '../models/barang_model.dart';
+import '../models/notification_model.dart'; // BARU: Impor model Notifikasi
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/transaksi_model.dart';
@@ -60,14 +61,13 @@ class SqliteService {
 
 
     // --- PERUBAHAN SKEMA TABEL BARANG ---
-    // Menambahkan stok_awal dan mengubah stok menjadi stok_saat_ini
     await db.execute('''
     CREATE TABLE barang (
       id_barang $idType,
       id_kategori INTEGER,
       nama_barang $textType,
-      stok_awal $intType,      -- <-- BARU
-      stok_saat_ini $intType,   -- <-- UBAH
+      stok_awal $intType,
+      stok_saat_ini $intType,
       harga $realType,
       harga_modal $realType,
       FOREIGN KEY (id_kategori) REFERENCES kategori (id_kategori) ON DELETE SET NULL
@@ -95,6 +95,17 @@ class SqliteService {
       subtotal $realType,
       keuntungan $realType,
       FOREIGN KEY (id_transaksi) REFERENCES transaksi (id_transaksi) ON DELETE CASCADE,
+      FOREIGN KEY (id_barang) REFERENCES barang (id_barang) ON DELETE SET NULL
+    )''');
+
+    // BARU: Tabel untuk Notifikasi
+    await db.execute('''
+    CREATE TABLE notifikasi (
+      id_notifikasi $idType,
+      id_barang INTEGER,
+      pesan $textType,
+      tipe_notifikasi $textType,
+      tanggal $textType,
       FOREIGN KEY (id_barang) REFERENCES barang (id_barang) ON DELETE SET NULL
     )''');
   }
@@ -146,7 +157,6 @@ class SqliteService {
   }
 
   /// Menyimpan barang baru ke dalam tabel 'barang'.
-  // Metode ini akan menggunakan toMap() dari model Barang yang sudah diperbarui
   Future<Barang> createBarang(Barang barang) async {
     final db = await instance.database;
     final id = await db.insert('barang', barang.toMap());
@@ -154,14 +164,13 @@ class SqliteService {
   }
 
   /// Mengambil satu barang spesifik berdasarkan ID-nya.
-  // Metode ini akan menggunakan fromMap() dari model Barang yang sudah diperbarui
   Future<Barang> getBarangById(int id) async {
     final db = await instance.database;
     final maps = await db.query(
         'barang',
         where: 'id_barang = ?',
         whereArgs: [id],
-        columns: ['id_barang', 'id_kategori', 'nama_barang', 'stok_awal', 'stok_saat_ini', 'harga', 'harga_modal'] // Menambahkan kolom baru
+        columns: ['id_barang', 'id_kategori', 'nama_barang', 'stok_awal', 'stok_saat_ini', 'harga', 'harga_modal']
     );
 
     if (maps.isNotEmpty) {
@@ -172,7 +181,6 @@ class SqliteService {
   }
 
   /// Mengambil semua barang dari database, diurutkan berdasarkan nama.
-  // Metode ini akan menggunakan fromMap() dari model Barang yang sudah diperbarui
   Future<List<Barang>> getAllBarang() async {
     final db = await instance.database;
     final result = await db.query('barang', orderBy: 'nama_barang ASC');
@@ -180,7 +188,6 @@ class SqliteService {
   }
 
   /// Memperbarui data barang yang ada di database.
-  // Metode ini akan menggunakan toMap() dari model Barang yang sudah diperbarui
   Future<int> updateBarang(Barang barang) async {
     final db = await instance.database;
     return db.update(
@@ -205,33 +212,24 @@ class SqliteService {
   Future<void> createTransaksi(Transaksi transaksi, List<DetailTransaksi> details) async {
     final db = await instance.database;
 
-    // Gunakan db.transaction untuk memastikan semua operasi berhasil atau semuanya dibatalkan
     await db.transaction((txn) async {
-      // 1. Simpan header transaksi dan dapatkan ID-nya
       final idTransaksi = await txn.insert('transaksi', transaksi.toMapWithoutDetails());
 
-      // 2. Loop melalui setiap detail barang dalam transaksi
       for (final detail in details) {
-        // 3. Simpan detail transaksi dengan ID header yang baru saja didapat
         await txn.insert('detail_transaksi', detail.toMapWithTransactionId(idTransaksi));
 
-        // 4. Ambil data barang saat ini untuk mendapatkan stok terakhir (stok_saat_ini)
         final barangResult = await txn.query('barang', where: 'id_barang = ?', whereArgs: [detail.idBarang]);
 
         if (barangResult.isNotEmpty) {
           final barang = Barang.fromMap(barangResult.first);
 
-          // Error handling: Pastikan stok cukup sebelum mengurangi
-          if (barang.stokSaatIni < detail.jumlah) { // <--- UBAH: Menggunakan stokSaatIni
-            // Jika stok tidak cukup, batalkan seluruh transaksi dengan melempar error
+          if (barang.stokSaatIni < detail.jumlah) {
             throw Exception('Stok untuk ${barang.namaBarang} tidak mencukupi.');
           }
 
-          final stokBaru = barang.stokSaatIni - detail.jumlah; // <--- UBAH: Mengurangi stokSaatIni
-          // 5. Update stok_saat_ini barang di database
-          await txn.update('barang', {'stok_saat_ini': stokBaru}, where: 'id_barang = ?', whereArgs: [detail.idBarang]); // <--- UBAH: Update stok_saat_ini
+          final stokBaru = barang.stokSaatIni - detail.jumlah;
+          await txn.update('barang', {'stok_saat_ini': stokBaru}, where: 'id_barang = ?', whereArgs: [detail.idBarang]);
         } else {
-          // Jika karena suatu alasan barang tidak ditemukan, batalkan transaksi
           throw Exception('Barang dengan ID ${detail.idBarang} tidak ditemukan.');
         }
       }
@@ -257,12 +255,9 @@ class SqliteService {
   }
 
   /// Mengambil semua transaksi dalam rentang tanggal tertentu.
-  /// Tanggal disimpan sebagai teks dalam format ISO 8601, jadi kita bisa membandingkannya sebagai string.
   Future<List<Transaksi>> getTransaksiByDateRange(DateTime start, DateTime end) async {
     final db = await instance.database;
 
-    // Menambahkan satu hari ke tanggal akhir untuk memastikan semua transaksi
-    // pada hari 'end' ikut terambil (karena perbandingan waktunya hingga 23:59:59).
     final endDate = end.add(const Duration(days: 1));
 
     final result = await db.query(
@@ -272,8 +267,6 @@ class SqliteService {
       orderBy: 'tanggal DESC',
     );
 
-    // Proses ini sama seperti di getAllTransaksi, yaitu mengambil detail
-    // untuk setiap transaksi yang ditemukan.
     List<Transaksi> transaksiList = [];
     for (var trxMap in result) {
       final detailResult = await db.query(
@@ -292,11 +285,11 @@ class SqliteService {
     required int jumlahTambah,
     required double totalBiaya,
     required int idPengguna,
+    List<DetailTransaksi>? details,
   }) async {
     final db = await instance.database;
 
     await db.transaction((txn) async {
-      // 1. Ambil data barang saat ini untuk mendapatkan stok_saat_ini
       final barangSaatIni = await txn.query(
         'barang',
         where: 'id_barang = ?',
@@ -307,24 +300,41 @@ class SqliteService {
         throw Exception('Barang tidak ditemukan untuk di-restock.');
       }
 
-      // 2. Hitung stok baru dan update ke database (hanya stok_saat_ini)
-      final stokLamaSaatIni = barangSaatIni.first['stok_saat_ini'] as int; // <--- UBAH: Menggunakan stok_saat_ini
+      final stokLamaSaatIni = barangSaatIni.first['stok_saat_ini'] as int;
       final stokBaruSaatIni = stokLamaSaatIni + jumlahTambah;
       await txn.update(
         'barang',
-        {'stok_saat_ini': stokBaruSaatIni}, // <--- UBAH: Update stok_saat_ini
+        {'stok_saat_ini': stokBaruSaatIni},
         where: 'id_barang = ?',
         whereArgs: [idBarang],
       );
 
-      // 3. Buat catatan transaksi baru untuk pengeluaran
-      await txn.insert('transaksi', {
+      final idTransaksi = await txn.insert('transaksi', {
         'id_pengguna': idPengguna,
         'tanggal': DateTime.now().toIso8601String(),
         'jenis_transaksi': 'Pembelian',
         'total': totalBiaya,
       });
+
+      if (details != null && details.isNotEmpty) {
+        for (final detail in details) {
+          await txn.insert('detail_transaksi', detail.toMapWithTransactionId(idTransaksi));
+        }
+      }
     });
+  }
+
+  // BARU: Metode untuk Notifikasi
+  Future<void> createNotification(NotificationItem notification) async {
+    final db = await instance.database;
+    await db.insert('notifikasi', notification.toMap());
+  }
+
+  // BARU: Metode untuk mengambil semua notifikasi
+  Future<List<NotificationItem>> getAllNotifications() async {
+    final db = await instance.database;
+    final result = await db.query('notifikasi', orderBy: 'tanggal DESC');
+    return result.map((json) => NotificationItem.fromMap(json)).toList();
   }
 
   Future close() async {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/barang_model.dart';
+import '../models/detail_transaksi_model.dart';
+import '../models/notification_model.dart'; // BARU: Import NotificationModel
 import '../services/sqlite_service.dart';
 import 'report_controller.dart';
 import 'auth_controller.dart';
@@ -8,40 +10,32 @@ import 'auth_controller.dart';
 class StockController extends ChangeNotifier {
   final SqliteService _sqliteService = SqliteService.instance;
 
-  // State privat untuk daftar barang dan status loading
   List<Barang> _barangList = [];
   bool _isLoading = false;
 
-  // Getter publik agar UI bisa mengakses state ini dengan aman (read-only)
   List<Barang> get barangList => _barangList;
   bool get isLoading => _isLoading;
 
-  // Constructor ini akan dipanggil saat StockController pertama kali dibuat.
-  // Kita langsung memanggil fetchBarang() agar data stok segera dimuat.
   StockController() {
     fetchBarang();
   }
 
-  /// Mengambil semua data barang dari database dan memperbarui state.
   Future<void> fetchBarang() async {
     _setLoading(true);
     try {
       _barangList = await _sqliteService.getAllBarang();
     } catch (e) {
-      print("Error saat fetchBarang di StockController: $e"); // Menambahkan log yang lebih spesifik
-      _barangList = []; // Kosongkan daftar jika terjadi error
+      print("Error saat fetchBarang di StockController: $e");
+      _barangList = [];
     }
     _setLoading(false);
   }
 
-  /// Menambahkan barang baru ke database, lalu memuat ulang daftar barang.
-  // Menerima BuildContext untuk mengakses AuthController dan ReportController
-  Future<void> addBarang(BuildContext context, Barang barang) async { // <-- UBAH: Menambahkan BuildContext
+  Future<void> addBarang(BuildContext context, Barang barang) async {
     _setLoading(true);
     try {
-      final Barang newBarangWithId = await _sqliteService.createBarang(barang); // Tangkap barang dengan ID yang dihasilkan
+      final Barang newBarangWithId = await _sqliteService.createBarang(barang);
 
-      // --- LOGIKA BARU UNTUK PENGELUARAN SAAT TAMBAH BARANG ---
       final authController = Provider.of<AuthController>(context, listen: false);
       if (authController.currentUser == null) {
         throw Exception('Pengguna belum login atau data pengguna tidak tersedia.');
@@ -49,16 +43,30 @@ class StockController extends ChangeNotifier {
       final idPengguna = authController.currentUser!.id!;
 
       final double totalBiayaPengadaan = newBarangWithId.stokAwal * newBarangWithId.hargaModal;
-      await _sqliteService.createPembelian( // Mereuse createPembelian untuk mencatat pengeluaran
+
+      final List<DetailTransaksi> initialPurchaseDetails = [
+        DetailTransaksi(
+          idBarang: newBarangWithId.id!,
+          jumlah: newBarangWithId.stokAwal,
+          hargaSatuan: newBarangWithId.hargaModal,
+          subtotal: newBarangWithId.stokAwal * newBarangWithId.hargaModal,
+          keuntungan: 0,
+        ),
+      ];
+
+      await _sqliteService.createPembelian(
         idBarang: newBarangWithId.id!,
-        jumlahTambah: newBarangWithId.stokAwal, // Jumlah yang dibeli adalah stok awal
+        jumlahTambah: newBarangWithId.stokAwal,
         totalBiaya: totalBiayaPengadaan,
         idPengguna: idPengguna,
+        details: initialPurchaseDetails,
       );
-      // --- AKHIR LOGIKA PENGELUARAN ---
 
-      await fetchBarang(); // Muat ulang daftar barang
-      Provider.of<ReportController>(context, listen: false).fetchLaporan(); // Perbarui laporan keuangan
+      await fetchBarang();
+      Provider.of<ReportController>(context, listen: false).fetchLaporan();
+      // BARU: Periksa stok setelah penambahan barang baru
+      _checkAndCreateLowStockNotification(newBarangWithId);
+
     } catch (e) {
       _setLoading(false);
       rethrow;
@@ -66,26 +74,23 @@ class StockController extends ChangeNotifier {
     _setLoading(false);
   }
 
-  /// Mengupdate barang yang ada di database, lalu memuat ulang daftar barang.
   Future<void> updateBarang(Barang barang) async {
     _setLoading(true);
     await _sqliteService.updateBarang(barang);
     await fetchBarang();
+    // BARU: Periksa stok setelah update barang (jika stok_saat_ini diubah)
+    _checkAndCreateLowStockNotification(barang);
   }
 
-  /// Menghapus barang dari database, lalu memuat ulang daftar barang.
   Future<void> deleteBarang(int id) async {
     _setLoading(true);
     await _sqliteService.deleteBarang(id);
     await fetchBarang();
-    // Pemberitahuan ReportController akan dilakukan saat restockBarang atau saat halaman laporan dibuka
-    // karena deleteBarang tidak memiliki BuildContext untuk Provider.of secara langsung.
   }
 
-  // Fungsi helper internal untuk mengelola state loading dan memberitahu UI
   void _setLoading(bool value) {
     _isLoading = value;
-    notifyListeners(); // Ini adalah perintah kunci untuk memberitahu UI agar refresh
+    notifyListeners();
   }
 
   Future<void> restockBarang({
@@ -103,17 +108,30 @@ class StockController extends ChangeNotifier {
       }
       final idPengguna = authController.currentUser!.id!;
 
+      final Barang barangToRestock = await _sqliteService.getBarangById(idBarang);
+
+      final List<DetailTransaksi> restockDetails = [
+        DetailTransaksi(
+          idBarang: idBarang,
+          jumlah: jumlahTambah,
+          hargaSatuan: barangToRestock.hargaModal,
+          subtotal: barangToRestock.hargaModal * jumlahTambah,
+          keuntungan: 0,
+        ),
+      ];
+
       await _sqliteService.createPembelian(
         idBarang: idBarang,
         jumlahTambah: jumlahTambah,
         totalBiaya: totalBiaya,
         idPengguna: idPengguna,
+        details: restockDetails,
       );
 
-      // Setelah berhasil, muat ulang daftar barang
       await fetchBarang();
-      // Memberitahu ReportController untuk memuat ulang data juga
       Provider.of<ReportController>(context, listen: false).fetchLaporan();
+      // BARU: Periksa stok setelah restock
+      _checkAndCreateLowStockNotification(barangToRestock.copyWith(stokSaatIni: barangToRestock.stokSaatIni + jumlahTambah));
 
     } catch (e) {
       _setLoading(false);
@@ -121,5 +139,35 @@ class StockController extends ChangeNotifier {
     }
 
     _setLoading(false);
+  }
+
+  // BARU: Metode untuk memeriksa dan membuat notifikasi stok rendah
+  Future<void> _checkAndCreateLowStockNotification(Barang barang) async {
+    // Hindari notifikasi jika stok awal 0 atau barang tidak memiliki ID
+    if (barang.stokAwal == 0 || barang.id == null) return;
+
+    final double lowStockThreshold = barang.stokAwal * 0.10; // 10% dari stok awal
+
+    if (barang.stokSaatIni <= lowStockThreshold && barang.stokSaatIni > 0) {
+      final message = 'Stok ${barang.namaBarang} menipis! Sisa ${barang.stokSaatIni} unit.';
+      final notification = NotificationItem(
+        idBarang: barang.id,
+        message: message,
+        type: 'stok_rendah',
+        timestamp: DateTime.now(),
+      );
+      await _sqliteService.createNotification(notification);
+      print('Notifikasi stok rendah dibuat: $message'); // Untuk debugging
+    } else if (barang.stokSaatIni == 0) {
+      final message = 'Stok ${barang.namaBarang} habis!';
+      final notification = NotificationItem(
+        idBarang: barang.id,
+        message: message,
+        type: 'stok_habis',
+        timestamp: DateTime.now(),
+      );
+      await _sqliteService.createNotification(notification);
+      print('Notifikasi stok habis dibuat: $message'); // Untuk debugging
+    }
   }
 }
