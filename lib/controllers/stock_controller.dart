@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/barang_model.dart';
 import '../models/detail_transaksi_model.dart';
-import '../models/notification_model.dart'; // BARU: Import NotificationModel
+import '../models/notification_model.dart';
 import '../services/sqlite_service.dart';
 import 'report_controller.dart';
 import 'auth_controller.dart';
+import 'notification_controller.dart'; // BARU: Impor NotificationController
+import 'dart:math'; // Impor math untuk fungsi ceil
 
 class StockController extends ChangeNotifier {
   final SqliteService _sqliteService = SqliteService.instance;
@@ -64,8 +66,8 @@ class StockController extends ChangeNotifier {
 
       await fetchBarang();
       Provider.of<ReportController>(context, listen: false).fetchLaporan();
-      // BARU: Periksa stok setelah penambahan barang baru
-      _checkAndCreateLowStockNotification(newBarangWithId);
+      // Panggil metode publik setelah menambahkan barang baru, sertakan context
+      await checkAndCreateLowStockNotification(context, newBarangWithId);
 
     } catch (e) {
       _setLoading(false);
@@ -74,18 +76,20 @@ class StockController extends ChangeNotifier {
     _setLoading(false);
   }
 
-  Future<void> updateBarang(Barang barang) async {
+  Future<void> updateBarang(BuildContext context, Barang barang) async { // UBAH: Tambah context
     _setLoading(true);
     await _sqliteService.updateBarang(barang);
     await fetchBarang();
-    // BARU: Periksa stok setelah update barang (jika stok_saat_ini diubah)
-    _checkAndCreateLowStockNotification(barang);
+    // Panggil metode publik setelah update barang (jika stok_saat_ini diubah)
+    await checkAndCreateLowStockNotification(context, barang);
+    _setLoading(false);
   }
 
   Future<void> deleteBarang(int id) async {
     _setLoading(true);
     await _sqliteService.deleteBarang(id);
     await fetchBarang();
+    _setLoading(false);
   }
 
   void _setLoading(bool value) {
@@ -129,9 +133,11 @@ class StockController extends ChangeNotifier {
       );
 
       await fetchBarang();
+      final Barang updatedBarang = _barangList.firstWhere((b) => b.id == idBarang);
+
       Provider.of<ReportController>(context, listen: false).fetchLaporan();
-      // BARU: Periksa stok setelah restock
-      _checkAndCreateLowStockNotification(barangToRestock.copyWith(stokSaatIni: barangToRestock.stokSaatIni + jumlahTambah));
+      // Panggil metode publik setelah restock dengan objek barang yang terbaru, sertakan context
+      await checkAndCreateLowStockNotification(context, updatedBarang);
 
     } catch (e) {
       _setLoading(false);
@@ -141,12 +147,14 @@ class StockController extends ChangeNotifier {
     _setLoading(false);
   }
 
-  // BARU: Metode untuk memeriksa dan membuat notifikasi stok rendah
-  Future<void> _checkAndCreateLowStockNotification(Barang barang) async {
+  // Metode untuk memeriksa dan membuat notifikasi stok rendah/habis
+  // Sekarang menerima BuildContext
+  Future<void> checkAndCreateLowStockNotification(BuildContext context, Barang barang) async { // UBAH: Tambah context
     // Hindari notifikasi jika stok awal 0 atau barang tidak memiliki ID
     if (barang.stokAwal == 0 || barang.id == null) return;
 
-    final double lowStockThreshold = barang.stokAwal * 0.10; // 10% dari stok awal
+    // Gunakan .ceil() untuk pembulatan ke atas agar ambang batas bulat
+    final int lowStockThreshold = (barang.stokAwal * 0.10).ceil(); // 10% dari stok awal
 
     if (barang.stokSaatIni <= lowStockThreshold && barang.stokSaatIni > 0) {
       final message = 'Stok ${barang.namaBarang} menipis! Sisa ${barang.stokSaatIni} unit.';
@@ -158,6 +166,10 @@ class StockController extends ChangeNotifier {
       );
       await _sqliteService.createNotification(notification);
       print('Notifikasi stok rendah dibuat: $message'); // Untuk debugging
+
+      // BARU: Beri tahu NotificationController untuk memuat ulang notifikasi
+      Provider.of<NotificationController>(context, listen: false).fetchNotifications();
+
     } else if (barang.stokSaatIni == 0) {
       final message = 'Stok ${barang.namaBarang} habis!';
       final notification = NotificationItem(
@@ -168,6 +180,9 @@ class StockController extends ChangeNotifier {
       );
       await _sqliteService.createNotification(notification);
       print('Notifikasi stok habis dibuat: $message'); // Untuk debugging
+
+      // BARU: Beri tahu NotificationController untuk memuat ulang notifikasi
+      Provider.of<NotificationController>(context, listen: false).fetchNotifications();
     }
   }
 }

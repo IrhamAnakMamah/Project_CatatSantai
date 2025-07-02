@@ -9,9 +9,6 @@ class NotificationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Menghapus data dummy yang lama
-    // final List<NotificationItem> _notifications = const [...];
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5EC),
       body: Stack(
@@ -113,9 +110,9 @@ class NotificationPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 30),
 
-                  // Daftar Notifikasi (Sekarang dari NotificationController)
+                  // Daftar Notifikasi
                   Expanded(
-                    child: Consumer<NotificationController>( // Menggunakan Consumer
+                    child: Consumer<NotificationController>(
                       builder: (context, notificationController, child) {
                         if (notificationController.isLoading) {
                           return const Center(child: CircularProgressIndicator());
@@ -143,11 +140,36 @@ class NotificationPage extends StatelessWidget {
                               iconColor = Colors.blue;      // Default
                             }
 
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 15.0),
-                              child: Column(
-                                children: [
-                                  Row(
+                            // BARU: Menentukan gaya berdasarkan status dibaca/belum dibaca
+                            final bool isRead = notification.isRead;
+                            // Warna latar belakang yang berbeda untuk notifikasi belum dibaca
+                            final Color cardColor = isRead ? Colors.white : Colors.blue.shade50;
+                            // Ketebalan teks pesan yang berbeda
+                            final FontWeight messageWeight = isRead ? FontWeight.normal : FontWeight.bold;
+                            // Warna teks pesan yang berbeda
+                            final Color messageColor = isRead ? Colors.grey[700]! : Colors.black87;
+
+                            return GestureDetector( // BARU: Menambahkan GestureDetector agar notifikasi bisa diketuk
+                              onTap: () {
+                                // Tandai notifikasi sebagai sudah dibaca hanya jika belum dibaca
+                                if (!isRead && notification.id != null) {
+                                  notificationController.markNotificationAsRead(notification.id!);
+                                }
+                              },
+                              child: Card( // BARU: Bungkus dengan Card untuk visualisasi yang lebih baik
+                                color: cardColor, // Menggunakan warna dinamis
+                                elevation: isRead ? 1 : 3, // Lebih menonjol jika belum dibaca
+                                margin: const EdgeInsets.only(bottom: 15.0),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(
+                                    color: isRead ? Colors.grey.shade200 : Colors.blue.shade200, // Border untuk belum dibaca
+                                    width: isRead ? 0.5 : 1.0,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Icon(
@@ -173,7 +195,8 @@ class NotificationPage extends StatelessWidget {
                                               notification.message,
                                               style: TextStyle(
                                                 fontSize: 16,
-                                                color: Colors.grey[700],
+                                                fontWeight: messageWeight, // BARU: FontWeight dinamis
+                                                color: messageColor, // BARU: Warna teks dinamis
                                               ),
                                             ),
                                             const SizedBox(height: 5),
@@ -189,8 +212,7 @@ class NotificationPage extends StatelessWidget {
                                       ),
                                     ],
                                   ),
-                                  const Divider(height: 30, thickness: 0.8, color: Colors.grey),
-                                ],
+                                ),
                               ),
                             );
                           },

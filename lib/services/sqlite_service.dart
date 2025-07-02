@@ -2,7 +2,7 @@
 import '../models/kategori_model.dart';
 import '../models/pengguna_model.dart';
 import '../models/barang_model.dart';
-import '../models/notification_model.dart'; // BARU: Impor model Notifikasi
+import '../models/notification_model.dart'; // Impor model Notifikasi
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/transaksi_model.dart';
@@ -22,8 +22,9 @@ class SqliteService {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    // Kita akan menaikkan versi database ke 2. Ini akan memicu onUpgrade.
-    // Namun, cara termudah selama pengembangan adalah uninstall aplikasi.
+    // UBAH VERSI DATABASE: Jika Anda telah menjalankan aplikasi sebelumnya dan ingin
+    // database direset dengan skema baru, ubah 'version: 1' menjadi 'version: 2'
+    // atau angka yang lebih tinggi. Kemudian uninstall aplikasi di emulator/perangkat.
     return await openDatabase(path, version: 1, onCreate: _createDB, onConfigure: _onConfigure);
   }
 
@@ -37,7 +38,6 @@ class SqliteService {
     const intType = 'INTEGER NOT NULL';
     const realType = 'REAL NOT NULL';
 
-    // ... (CREATE TABLE untuk pengguna, profil_usaha, kategori tidak berubah)
     await db.execute('''
     CREATE TABLE pengguna (
       id_pengguna $idType,
@@ -59,8 +59,6 @@ class SqliteService {
       nama_kategori $textType UNIQUE
     )''');
 
-
-    // --- PERUBAHAN SKEMA TABEL BARANG ---
     await db.execute('''
     CREATE TABLE barang (
       id_barang $idType,
@@ -73,7 +71,6 @@ class SqliteService {
       FOREIGN KEY (id_kategori) REFERENCES kategori (id_kategori) ON DELETE SET NULL
     )''');
 
-    // ... (CREATE TABLE untuk transaksi tidak berubah)
     await db.execute('''
     CREATE TABLE transaksi (
       id_transaksi $idType,
@@ -84,7 +81,6 @@ class SqliteService {
       FOREIGN KEY (id_pengguna) REFERENCES pengguna (id_pengguna)
     )''');
 
-    // --- PERUBAHAN SKEMA TABEL DETAIL TRANSAKSI ---
     await db.execute('''
     CREATE TABLE detail_transaksi (
       id_detail_transaksi $idType,
@@ -98,7 +94,7 @@ class SqliteService {
       FOREIGN KEY (id_barang) REFERENCES barang (id_barang) ON DELETE SET NULL
     )''');
 
-    // BARU: Tabel untuk Notifikasi
+    // UBAH: Tambahkan kolom 'sudah_dibaca' dengan nilai default 0
     await db.execute('''
     CREATE TABLE notifikasi (
       id_notifikasi $idType,
@@ -106,8 +102,24 @@ class SqliteService {
       pesan $textType,
       tipe_notifikasi $textType,
       tanggal $textType,
+      sudah_dibaca INTEGER NOT NULL DEFAULT 0, -- BARU: Kolom untuk status dibaca (0=false, 1=true)
       FOREIGN KEY (id_barang) REFERENCES barang (id_barang) ON DELETE SET NULL
     )''');
+
+    await db.rawInsert('''
+    INSERT INTO kategori(id_kategori, nama_kategori) VALUES
+    (1, 'Makanan'),
+    (2, 'Minuman');
+  ''');
+
+    // 2. Tambah Barang Dummy
+    await db.rawInsert('''
+    INSERT INTO barang(id_kategori, nama_barang, stok_awal, stok_saat_ini, harga, harga_modal) VALUES
+    (1, 'Kentang Goreng', 20, 20, 8000, 2000),
+    (1, 'Nasi Katsu Ayam', 30, 30, 12000, 7000),
+    (2, 'Air Mineral', 20, 20, 4000, 2000),
+    (2, 'Susu Murni', 30, 30, 5000, 3000);
+  ''');
   }
 
   /// Menyimpan pengguna baru ke dalam tabel 'pengguna'.
@@ -118,7 +130,6 @@ class SqliteService {
       final id = await db.insert('pengguna', pengguna.toMap());
       return pengguna.copyWith(id: id);
     } catch (e) {
-      // Kemungkinan besar error terjadi karena UNIQUE constraint pada nomor_telepon.
       print("Error saat registerUser: $e");
       rethrow;
     }
@@ -146,7 +157,7 @@ class SqliteService {
   Future<Kategori> createKategori(Kategori kategori) async {
     final db = await instance.database;
     final id = await db.insert('kategori', kategori.toMap());
-    return kategori.copyWith(id: id); // Anda perlu menambahkan copyWith di model Kategori
+    return kategori.copyWith(id: id);
   }
 
   /// Mengambil semua kategori.
@@ -324,17 +335,29 @@ class SqliteService {
     });
   }
 
-  // BARU: Metode untuk Notifikasi
+  // UBAH: Metode untuk Notifikasi, pastikan isRead ikut disimpan
   Future<void> createNotification(NotificationItem notification) async {
     final db = await instance.database;
+    // Saat membuat notifikasi baru, isRead akan default ke false (0)
     await db.insert('notifikasi', notification.toMap());
   }
 
-  // BARU: Metode untuk mengambil semua notifikasi
+  // UBAH: Metode untuk mengambil semua notifikasi, pastikan isRead ikut diambil
   Future<List<NotificationItem>> getAllNotifications() async {
     final db = await instance.database;
     final result = await db.query('notifikasi', orderBy: 'tanggal DESC');
     return result.map((json) => NotificationItem.fromMap(json)).toList();
+  }
+
+  // BARU: Metode untuk memperbarui status 'sudah_dibaca' notifikasi
+  Future<int> updateNotificationReadStatus(int id, bool isRead) async {
+    final db = await instance.database;
+    return await db.update(
+      'notifikasi',
+      {'sudah_dibaca': isRead ? 1 : 0}, // Set 1 jika true, 0 jika false
+      where: 'id_notifikasi = ?',
+      whereArgs: [id],
+    );
   }
 
   Future close() async {

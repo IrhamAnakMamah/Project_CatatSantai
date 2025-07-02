@@ -33,7 +33,15 @@ class NotificationController extends ChangeNotifier {
     }
   }
 
+  // BARU: Metode untuk menandai notifikasi sebagai sudah dibaca
+  Future<void> markNotificationAsRead(int notificationId) async {
+    // Panggil service untuk memperbarui status di database
+    await _sqliteService.updateNotificationReadStatus(notificationId, true);
+    // Setelah diupdate di DB, refresh daftar notifikasi di controller
+    // agar UI juga terupdate secara otomatis
+    await fetchNotifications();
+  }
+
 // Anda bisa menambahkan fungsi lain di sini, misalnya:
-// - Menandai notifikasi sebagai sudah dibaca
 // - Menghapus notifikasi
 }

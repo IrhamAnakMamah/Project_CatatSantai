@@ -65,7 +65,7 @@ class _EditStockFormState extends State<EditStockForm> {
     );
 
     // Panggil fungsi update dari StockController
-    await Provider.of<StockController>(context, listen: false).updateBarang(barangUpdate);
+    await Provider.of<StockController>(context, listen: false).updateBarang(context, barangUpdate);
 
     if (mounted) {
       showDialog(

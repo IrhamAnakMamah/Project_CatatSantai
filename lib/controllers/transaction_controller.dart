@@ -6,7 +6,7 @@ import '../models/detail_transaksi_model.dart';
 import '../services/sqlite_service.dart';
 import 'auth_controller.dart';
 import 'stock_controller.dart';
-import 'report_controller.dart'; // Pastikan ini diimpor jika belum
+import 'report_controller.dart';
 
 class TransactionController extends ChangeNotifier {
   final SqliteService _sqliteService = SqliteService.instance;
@@ -28,6 +28,7 @@ class TransactionController extends ChangeNotifier {
 
       double grandTotal = 0;
       List<DetailTransaksi> details = [];
+      List<Barang> itemsAffected = []; // BARU: Untuk menyimpan barang yang terkena dampak
 
       for (var entry in selectedItems.entries) {
         final int barangId = entry.key;
@@ -53,6 +54,7 @@ class TransactionController extends ChangeNotifier {
           subtotal: subtotal,
           keuntungan: totalKeuntunganItem,
         ));
+        itemsAffected.add(barang); // Tambahkan barang yang terkena dampak
       }
 
       // Buat objek header transaksi
@@ -71,6 +73,12 @@ class TransactionController extends ChangeNotifier {
       // Refresh laporan di ReportController juga
       Provider.of<ReportController>(context, listen: false).fetchLaporan();
 
+      // BARU: Periksa notifikasi stok rendah/habis untuk setiap barang yang terjual
+      for (var originalBarang in itemsAffected) {
+        // Dapatkan data barang terbaru setelah fetchBarang()
+        final updatedBarang = stockController.barangList.firstWhere((b) => b.id == originalBarang.id);
+        await stockController.checkAndCreateLowStockNotification(context, updatedBarang);
+      }
 
     } catch (e) {
       _isLoading = false;
