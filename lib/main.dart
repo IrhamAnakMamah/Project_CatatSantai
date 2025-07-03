@@ -1,3 +1,4 @@
+import 'package:catatsantai/views/pengaturan/initial_profile_setup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'controllers/auth_controller.dart';
@@ -8,9 +9,8 @@ import 'controllers/stock_controller.dart';
 import 'controllers/transaction_controller.dart';
 import 'views/auth/login_screen.dart';
 import 'views/main_page.dart';
-
-// Ganti import ini jika Anda meletakkan file dummy_data_generator di lokasi lain
 import 'utils/dummy_data_generator.dart';
+import 'views/components/login_success_dialog.dart';
 
 void main() {
   runApp(
@@ -52,10 +52,19 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthController>(
       builder: (context, authController, child) {
+        // Jika pengguna sudah login
         if (authController.isLoggedIn) {
-          // Ganti MainPage dengan DataInitializer
-          return const DataInitializer(child: MainPage());
-        } else {
+          // Periksa apakah dia sudah melengkapi profil
+          if (authController.hasCompletedProfile) {
+            // Jika sudah, arahkan ke halaman utama
+            return const DataInitializer(child: MainPage());
+          } else {
+            // Jika belum, arahkan ke halaman setup profil
+            return const InitialProfileSetupPage();
+          }
+        }
+        // Jika belum login, arahkan ke halaman login
+        else {
           return const LoginPage();
         }
       },
@@ -63,7 +72,6 @@ class AuthWrapper extends StatelessWidget {
   }
 }
 
-// WIDGET BARU UNTUK MEMANGGIL FUNGSI ANDA DENGAN AMAN
 class DataInitializer extends StatefulWidget {
   final Widget child;
   const DataInitializer({super.key, required this.child});
@@ -73,19 +81,26 @@ class DataInitializer extends StatefulWidget {
 }
 
 class _DataInitializerState extends State<DataInitializer> {
+  bool _isDialogShown = false;
+
   @override
   void initState() {
     super.initState();
-    // Memanggil fungsi Anda di sini memastikan ia hanya berjalan satu kali.
-    // addPostFrameCallback digunakan agar context dijamin sudah siap.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       populateDummyData(context);
+      if (!_isDialogShown) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) => const LoginSuccessDialog(),
+        );
+        setState(() => _isDialogShown = true);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Setelah inisialisasi, tampilkan halaman utama aplikasi
     return widget.child;
   }
 }

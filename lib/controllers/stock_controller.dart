@@ -1,13 +1,14 @@
+// lib/controllers/stock_controller.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/barang_model.dart';
 import '../models/detail_transaksi_model.dart';
 import '../models/notification_model.dart';
 import '../services/sqlite_service.dart';
-import 'report_controller.dart';
 import 'auth_controller.dart';
-import 'notification_controller.dart'; // BARU: Impor NotificationController
-import 'dart:math'; // Impor math untuk fungsi ceil
+import 'notification_controller.dart';
+import 'report_controller.dart'; // Impor ReportController
+import 'dart:math';
 
 class StockController extends ChangeNotifier {
   final SqliteService _sqliteService = SqliteService.instance;
@@ -33,54 +34,44 @@ class StockController extends ChangeNotifier {
     _setLoading(false);
   }
 
+  // === PERUBAHAN UTAMA DI SINI ===
+  /// Menambahkan barang baru dan mencatat transaksi pembelian awalnya.
   Future<void> addBarang(BuildContext context, Barang barang) async {
     _setLoading(true);
     try {
-      final Barang newBarangWithId = await _sqliteService.createBarang(barang);
-
+      // Ambil ID pengguna yang sedang login.
       final authController = Provider.of<AuthController>(context, listen: false);
       if (authController.currentUser == null) {
-        throw Exception('Pengguna belum login atau data pengguna tidak tersedia.');
+        throw Exception("Pengguna tidak ditemukan, tidak bisa menambah barang.");
       }
       final idPengguna = authController.currentUser!.id!;
 
-      final double totalBiayaPengadaan = newBarangWithId.stokAwal * newBarangWithId.hargaModal;
+      // Panggil fungsi createBarang yang sudah diperbarui dengan idPengguna.
+      // Fungsi ini akan menangani insert barang dan insert transaksi secara atomik.
+      final barangBaru = await _sqliteService.createBarang(barang, idPengguna);
 
-      final List<DetailTransaksi> initialPurchaseDetails = [
-        DetailTransaksi(
-          idBarang: newBarangWithId.id!,
-          jumlah: newBarangWithId.stokAwal,
-          hargaSatuan: newBarangWithId.hargaModal,
-          subtotal: newBarangWithId.stokAwal * newBarangWithId.hargaModal,
-          keuntungan: 0,
-        ),
-      ];
-
-      await _sqliteService.createPembelian(
-        idBarang: newBarangWithId.id!,
-        jumlahTambah: newBarangWithId.stokAwal,
-        totalBiaya: totalBiayaPengadaan,
-        idPengguna: idPengguna,
-        details: initialPurchaseDetails,
-      );
-
+      // Refresh daftar barang di UI
       await fetchBarang();
+
+      // Refresh laporan karena ada transaksi pembelian baru yang tercatat.
       Provider.of<ReportController>(context, listen: false).fetchLaporan();
-      // Panggil metode publik setelah menambahkan barang baru, sertakan context
-      await checkAndCreateLowStockNotification(context, newBarangWithId);
+
+      // Periksa notifikasi stok rendah.
+      await checkAndCreateLowStockNotification(context, barangBaru);
 
     } catch (e) {
+      print("Error saat addBarang di StockController: $e");
       _setLoading(false);
       rethrow;
+    } finally {
+      _setLoading(false);
     }
-    _setLoading(false);
   }
 
-  Future<void> updateBarang(BuildContext context, Barang barang) async { // UBAH: Tambah context
+  Future<void> updateBarang(BuildContext context, Barang barang) async {
     _setLoading(true);
     await _sqliteService.updateBarang(barang);
     await fetchBarang();
-    // Panggil metode publik setelah update barang (jika stok_saat_ini diubah)
     await checkAndCreateLowStockNotification(context, barang);
     _setLoading(false);
   }
@@ -97,6 +88,7 @@ class StockController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Menambah stok untuk barang yang sudah ada (restock).
   Future<void> restockBarang({
     required BuildContext context,
     required int idBarang,
@@ -104,85 +96,49 @@ class StockController extends ChangeNotifier {
     required double totalBiaya,
   }) async {
     _setLoading(true);
-
     try {
       final authController = Provider.of<AuthController>(context, listen: false);
       if (authController.currentUser == null) {
-        throw Exception('Pengguna belum login atau data pengguna tidak tersedia.');
+        throw Exception("Pengguna tidak ditemukan, tidak bisa melakukan restock.");
       }
       final idPengguna = authController.currentUser!.id!;
 
       final Barang barangToRestock = await _sqliteService.getBarangById(idBarang);
-
       final List<DetailTransaksi> restockDetails = [
-        DetailTransaksi(
-          idBarang: idBarang,
-          jumlah: jumlahTambah,
-          hargaSatuan: barangToRestock.hargaModal,
-          subtotal: barangToRestock.hargaModal * jumlahTambah,
-          keuntungan: 0,
-        ),
+        DetailTransaksi(idBarang: idBarang, jumlah: jumlahTambah, hargaSatuan: barangToRestock.hargaModal, subtotal: barangToRestock.hargaModal * jumlahTambah, keuntungan: 0)
       ];
 
-      await _sqliteService.createPembelian(
-        idBarang: idBarang,
-        jumlahTambah: jumlahTambah,
-        totalBiaya: totalBiaya,
-        idPengguna: idPengguna,
-        details: restockDetails,
-      );
+      await _sqliteService.createPembelian(idBarang: idBarang, jumlahTambah: jumlahTambah, totalBiaya: totalBiaya, idPengguna: idPengguna, details: restockDetails);
 
       await fetchBarang();
       final Barang updatedBarang = _barangList.firstWhere((b) => b.id == idBarang);
-
       Provider.of<ReportController>(context, listen: false).fetchLaporan();
-      // Panggil metode publik setelah restock dengan objek barang yang terbaru, sertakan context
       await checkAndCreateLowStockNotification(context, updatedBarang);
-
     } catch (e) {
       _setLoading(false);
       rethrow;
+    } finally {
+      _setLoading(false);
     }
-
-    _setLoading(false);
   }
 
-  // Metode untuk memeriksa dan membuat notifikasi stok rendah/habis
-  // Sekarang menerima BuildContext
-  Future<void> checkAndCreateLowStockNotification(BuildContext context, Barang barang) async { // UBAH: Tambah context
-    // Hindari notifikasi jika stok awal 0 atau barang tidak memiliki ID
+  Future<void> checkAndCreateLowStockNotification(BuildContext context, Barang barang) async {
     if (barang.stokAwal == 0 || barang.id == null) return;
-
-    // Gunakan .ceil() untuk pembulatan ke atas agar ambang batas bulat
-    final int lowStockThreshold = (barang.stokAwal * 0.10).ceil(); // 10% dari stok awal
-
+    final int lowStockThreshold = (barang.stokAwal * 0.10).ceil();
     if (barang.stokSaatIni <= lowStockThreshold && barang.stokSaatIni > 0) {
       final message = 'Stok ${barang.namaBarang} menipis! Sisa ${barang.stokSaatIni} unit.';
-      final notification = NotificationItem(
-        idBarang: barang.id,
-        message: message,
-        type: 'stok_rendah',
-        timestamp: DateTime.now(),
-      );
+      final notification = NotificationItem(idBarang: barang.id, message: message, type: 'stok_rendah', timestamp: DateTime.now());
       await _sqliteService.createNotification(notification);
-      print('Notifikasi stok rendah dibuat: $message'); // Untuk debugging
-
-      // BARU: Beri tahu NotificationController untuk memuat ulang notifikasi
-      Provider.of<NotificationController>(context, listen: false).fetchNotifications();
-
+      if (context.mounted) {
+        Provider.of<NotificationController>(context, listen: false).fetchNotifications();
+      }
     } else if (barang.stokSaatIni == 0) {
       final message = 'Stok ${barang.namaBarang} habis!';
-      final notification = NotificationItem(
-        idBarang: barang.id,
-        message: message,
-        type: 'stok_habis',
-        timestamp: DateTime.now(),
-      );
+      final notification = NotificationItem(idBarang: barang.id, message: message, type: 'stok_habis', timestamp: DateTime.now());
       await _sqliteService.createNotification(notification);
-      print('Notifikasi stok habis dibuat: $message'); // Untuk debugging
-
-      // BARU: Beri tahu NotificationController untuk memuat ulang notifikasi
-      Provider.of<NotificationController>(context, listen: false).fetchNotifications();
+      if (context.mounted) {
+        Provider.of<NotificationController>(context, listen: false).fetchNotifications();
+      }
     }
   }
 }

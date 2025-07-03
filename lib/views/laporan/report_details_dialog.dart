@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/transaksi_model.dart';
-import '../../controllers/report_controller.dart'; // Untuk mengakses enum ReportPeriod
+import '../../controllers/report_controller.dart';
 
 class ReportDetailsDialog extends StatelessWidget {
   final List<Transaksi> transactions;
@@ -29,15 +29,16 @@ class ReportDetailsDialog extends StatelessWidget {
       symbol: 'Rp ',
       decimalDigits: 0,
     );
-    final dateFormatter = DateFormat('dd MMM yyyy, HH:mm'); // Format tanggal dan waktu
+    // Formatter untuk tanggal dan waktu
+    final dateFormatter = DateFormat('dd MMM yyyy, HH:mm');
 
     return AlertDialog(
       title: Text('Detail Laporan ${_getPeriodTitle(period)}'),
       content: SizedBox(
         width: double.maxFinite,
-        height: MediaQuery.of(context).size.height * 0.6, // Batasi tinggi dialog
+        height: MediaQuery.of(context).size.height * 0.6,
         child: transactions.isEmpty
-            ? Center(child: Text('Tidak ada transaksi untuk periode ini.'))
+            ? const Center(child: Text('Tidak ada transaksi untuk periode ini.'))
             : ListView.builder(
           itemCount: transactions.length,
           itemBuilder: (context, index) {
@@ -51,6 +52,7 @@ class ReportDetailsDialog extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Bagian yang menampilkan jenis dan total transaksi
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -73,23 +75,36 @@ class ReportDetailsDialog extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
+
+                    // === INI BAGIAN YANG HILANG: MENAMPILKAN TANGGAL ===
                     Text(
                       dateFormatter.format(trx.tanggal),
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
-                    const SizedBox(height: 8),
-                    // Detail Transaksi (Barang-barang dalam transaksi)
-                    Text('Detail Barang:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    // ===================================================
+
+                    const SizedBox(height: 12),
+                    const Divider(height: 1, thickness: 0.5),
+                    const SizedBox(height: 12),
+                    const Text('Detail Barang:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                     if (trx.details.isEmpty)
-                      Text('Tidak ada detail barang.', style: TextStyle(fontSize: 12, color: Colors.grey))
+                      const Text('Tidak ada detail barang.', style: TextStyle(fontSize: 12, color: Colors.grey))
                     else
-                      ...trx.details.map((detail) => Padding(
-                        padding: const EdgeInsets.only(left: 8.0, top: 4.0),
-                        child: Text(
-                          '${detail.jumlah}x ${detail.hargaSatuan} = ${currencyFormatter.format(detail.subtotal)} (ID Barang: ${detail.idBarang ?? 'N/A'})',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                        ),
-                      )).toList(),
+                      ...trx.details.map((detail) {
+                        final namaBarang = detail.namaBarang ?? 'Barang Dihapus';
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+                          child: Text(
+                            '$namaBarang: ${detail.jumlah} x ${currencyFormatter.format(detail.hargaSatuan)} = ${currencyFormatter.format(detail.subtotal)}',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: detail.namaBarang != null
+                                    ? Colors.grey[800]
+                                    : Colors.red.withOpacity(0.8)
+                            ),
+                          ),
+                        );
+                      }).toList(),
                   ],
                 ),
               ),
