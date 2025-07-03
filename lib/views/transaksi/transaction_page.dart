@@ -7,7 +7,6 @@ import '../../controllers/stock_controller.dart';
 import '../../controllers/category_controller.dart';
 import '../../models/barang_model.dart';
 import '../../models/kategori_model.dart';
-// 1. Impor file dialog yang kita butuhkan
 import 'transaction_confirmation_dialog.dart';
 
 class TransactionPage extends StatefulWidget {
@@ -18,7 +17,6 @@ class TransactionPage extends StatefulWidget {
 }
 
 class _TransactionPageState extends State<TransactionPage> {
-  // State Anda, tidak ada perubahan
   final Map<int, int> _selectedItems = {};
   String _searchQuery = '';
   Kategori? _selectedKategoriFilter;
@@ -50,21 +48,18 @@ class _TransactionPageState extends State<TransactionPage> {
     });
   }
 
-  // 2. Fungsi untuk membersihkan keranjang setelah transaksi selesai
   void _clearSelection() {
     setState(() {
       _selectedItems.clear();
     });
   }
 
-  // 3. Fungsi baru untuk mempersiapkan data dan menampilkan dialog konfirmasi
   void _showConfirmationDialog() {
     try {
       final stockController = Provider.of<StockController>(context, listen: false);
       final List<Barang> itemsInCart = [];
       double grandTotal = 0;
 
-      // Persiapkan data sebelum menampilkan dialog
       for (var entry in _selectedItems.entries) {
         final int barangId = entry.key;
         final int jumlah = entry.value;
@@ -74,7 +69,6 @@ class _TransactionPageState extends State<TransactionPage> {
         grandTotal += barang.harga * jumlah;
       }
 
-      // Tampilkan dialog dengan data yang sudah siap
       showDialog(
         context: context,
         builder: (BuildContext dialogContext) {
@@ -85,12 +79,10 @@ class _TransactionPageState extends State<TransactionPage> {
           );
         },
       ).then((_) {
-        // Setelah dialog ditutup, bersihkan keranjang belanja
         _clearSelection();
       });
 
     } catch (e) {
-      // Jika ada error saat persiapan data, tampilkan pesan
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Terjadi kesalahan: ${e.toString()}')),
       );
@@ -99,13 +91,11 @@ class _TransactionPageState extends State<TransactionPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Ini adalah UI baru Anda
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5EC),
       body: SafeArea(
         child: Column(
           children: [
-            // Header Baru Anda
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: Row(
@@ -131,8 +121,6 @@ class _TransactionPageState extends State<TransactionPage> {
                 ],
               ),
             ),
-
-            // Filter (tidak ada perubahan)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
@@ -154,11 +142,11 @@ class _TransactionPageState extends State<TransactionPage> {
                     builder: (context, categoryController, child) {
                       return DropdownButton<Kategori>(
                         value: _selectedKategoriFilter,
-                        hint: Text('Kategori'),
-                        icon: Icon(Icons.filter_list),
-                        underline: SizedBox(),
+                        hint: const Text('Kategori'),
+                        icon: const Icon(Icons.filter_list),
+                        underline: const SizedBox(),
                         items: [
-                          DropdownMenuItem<Kategori>(value: null, child: Text('Semua Kategori')),
+                          const DropdownMenuItem<Kategori>(value: null, child: Text('Semua Kategori')),
                           ...categoryController.kategoriList.map((kategori) => DropdownMenuItem<Kategori>(value: kategori, child: Text(kategori.namaKategori))).toList(),
                         ],
                         onChanged: (kategori) => setState(() => _selectedKategoriFilter = kategori),
@@ -168,34 +156,25 @@ class _TransactionPageState extends State<TransactionPage> {
                 ],
               ),
             ),
-
-            // Daftar Barang (tidak ada perubahan)
             Expanded(
               child: Consumer<StockController>(
                 builder: (context, stockController, child) {
                   if (stockController.isLoading) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
-                  // === PERUBAHAN LOGIKA FILTER DAN SORTING ===
                   var filteredList = stockController.barangList.where((barang) {
                     final matchesSearch = barang.namaBarang.toLowerCase().contains(_searchQuery.toLowerCase());
                     final matchesCategory = _selectedKategoriFilter == null || barang.idKategori == _selectedKategoriFilter!.id;
                     return matchesSearch && matchesCategory;
                   }).toList();
-
-                  // Sorting: barang dengan stok > 0 akan di atas
                   filteredList.sort((a, b) {
-                    if (a.stok > 0 && b.stok == 0) return -1; // a comes first
-                    if (a.stok == 0 && b.stok > 0) return 1;  // b comes first
-                    return a.namaBarang.compareTo(b.namaBarang); // sort by name if stock status is same
+                    if (a.stokSaatIni > 0 && b.stokSaatIni == 0) return -1;
+                    if (a.stokSaatIni == 0 && b.stokSaatIni > 0) return 1;
+                    return a.namaBarang.compareTo(b.namaBarang);
                   });
-                  // ===========================================
-
                   if (filteredList.isEmpty) {
                     return const Center(child: Text("Barang tidak ditemukan atau stok kosong."));
                   }
-
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
                     itemCount: filteredList.length,
@@ -203,12 +182,12 @@ class _TransactionPageState extends State<TransactionPage> {
                       final barang = filteredList[index];
                       final int selectedQuantity = _selectedItems[barang.id!] ?? 0;
 
-                      // === PERUBAHAN UI: Menambahkan logika untuk barang habis ===
-                      final bool isOutOfStock = barang.stok == 0;
-                      // =========================================================
+                      // === PERUBAHAN UTAMA DI SINI ===
+                      // Logika untuk menonaktifkan tombol tambah jika jumlah pilihan = stok tersedia
+                      final bool canIncrement = selectedQuantity < barang.stokSaatIni;
 
                       return Opacity(
-                        opacity: isOutOfStock ? 0.6 : 1.0, // Membuat kartu menjadi abu-abu
+                        opacity: barang.stokSaatIni == 0 ? 0.6 : 1.0,
                         child: Card(
                           elevation: 2,
                           margin: const EdgeInsets.only(bottom: 12.0),
@@ -221,39 +200,41 @@ class _TransactionPageState extends State<TransactionPage> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                      Text(barang.namaBarang, style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF1D4A4B))),
+                                      Text(barang.namaBarang, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1D4A4B))),
                                       const SizedBox(height: 4),
-                                      Text('Stok tersedia: ${barang.stok}', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                                      Text('Stok tersedia: ${barang.stokSaatIni}', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
                                     ])),
                                     Container(
                                       decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
                                       child: Row(
                                         children: [
                                           IconButton(icon: const Icon(Icons.remove, color: Color(0xFF1D4A4B)), onPressed: () => _decrementQuantity(barang.id!)),
-                                          Text('$selectedQuantity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                          // Tombol tambah dinonaktifkan jika stok habis
-                                          IconButton(icon: const Icon(Icons.add, color: Color(0xFF1D4A4B)), onPressed: isOutOfStock ? null : () => _incrementQuantity(barang.id!)),
+                                          Text('$selectedQuantity', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                          // Tombol tambah akan nonaktif jika canIncrement bernilai false
+                                          IconButton(
+                                              icon: Icon(Icons.add, color: canIncrement ? const Color(0xFF1D4A4B) : Colors.grey),
+                                              onPressed: canIncrement ? () => _incrementQuantity(barang.id!) : null
+                                          ),
                                         ],
                                       ),
                                     )
                                   ],
                                 ),
                               ),
-                              // Menambahkan label "Habis" jika stok 0
-                              if (isOutOfStock)
+                              if (barang.stokSaatIni == 0)
                                 Positioned(
                                   top: 0,
                                   right: 0,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red[700],
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
                                       borderRadius: BorderRadius.only(
                                         topRight: Radius.circular(12),
                                         bottomLeft: Radius.circular(12),
                                       ),
                                     ),
-                                    child: Text('Habis', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    child: const Text('Habis', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                                   ),
                                 ),
                             ],
@@ -268,12 +249,11 @@ class _TransactionPageState extends State<TransactionPage> {
           ],
         ),
       ),
-      // Tombol untuk melihat total
       floatingActionButton: _selectedItems.isNotEmpty
           ? FloatingActionButton.extended(
         onPressed: _showConfirmationDialog,
         label: Text('Lihat Total (${_selectedItems.length} item)'),
-        icon: Icon(Icons.shopping_cart_checkout),
+        icon: const Icon(Icons.shopping_cart_checkout),
         backgroundColor: const Color(0xFF6A8EEB),
       )
           : null,

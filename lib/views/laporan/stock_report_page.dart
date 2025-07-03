@@ -1,97 +1,123 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/stock_controller.dart';
+import '../../controllers/category_controller.dart';
+import '../../models/kategori_model.dart';
 
-class StockReportPage extends StatelessWidget {
+// Diubah menjadi StatefulWidget untuk mengelola state filter
+class StockReportPage extends StatefulWidget {
   const StockReportPage({super.key});
 
   @override
+  State<StockReportPage> createState() => _StockReportPageState();
+}
+
+class _StockReportPageState extends State<StockReportPage> {
+  String _searchQuery = '';
+  Kategori? _selectedKategoriFilter;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<CategoryController>(context, listen: false).fetchKategori();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Gunakan Consumer untuk "mendengarkan" perubahan dari StockController
-    return Consumer<StockController>(
-      builder: (context, controller, child) {
-        // Tampilkan loading indicator jika sedang memuat data dan daftar masih kosong
-        if (controller.isLoading && controller.barangList.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        // Tampilkan pesan jika tidak ada barang
-        if (controller.barangList.isEmpty) {
-          return const Center(child: Text('Belum ada data stok barang.'));
-        }
-
-        // Tampilkan daftar barang jika data tersedia.
-        // UI di bawah ini diambil persis dari kode asli Anda.
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      children: [
+        // == FITUR FILTER DAN PENCARIAN BARU ==
+        Row(
           children: [
-            // Header Tabel
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Stok',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1D4A4B),
-                    ),
-                  ),
-                  Text(
-                    'Jumlah',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1D4A4B),
-                    ),
-                  ),
-                ],
+            Expanded(
+              child: TextField(
+                onChanged: (value) => setState(() => _searchQuery = value),
+                decoration: InputDecoration(
+                  hintText: 'Cari nama barang...',
+                  prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Colors.grey),
+            const SizedBox(width: 10),
+            Consumer<CategoryController>(
+              builder: (context, categoryController, child) {
+                return DropdownButton<Kategori>(
+                  value: _selectedKategoriFilter,
+                  hint: Text('Kategori'),
+                  icon: Icon(Icons.filter_list),
+                  underline: SizedBox(),
+                  items: [
+                    DropdownMenuItem<Kategori>(value: null, child: Text('Semua')),
+                    ...categoryController.kategoriList.map((kategori) => DropdownMenuItem<Kategori>(value: kategori, child: Text(kategori.namaKategori))).toList(),
+                  ],
+                  onChanged: (kategori) => setState(() => _selectedKategoriFilter = kategori),
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
 
-            // Gunakan Expanded agar ListView mengisi sisa ruang yang tersedia
-            Expanded(
-              child: ListView.builder(
+        // Daftar Stok
+        Expanded(
+          child: Consumer<StockController>(
+            builder: (context, controller, child) {
+              if (controller.isLoading && controller.barangList.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final filteredList = controller.barangList.where((barang) {
+                final matchesSearch = barang.namaBarang.toLowerCase().contains(_searchQuery.toLowerCase());
+                final matchesCategory = _selectedKategoriFilter == null || barang.idKategori == _selectedKategoriFilter!.id;
+                return matchesSearch && matchesCategory;
+              }).toList();
+
+              if (filteredList.isEmpty) {
+                return const Center(child: Text('Barang tidak ditemukan.'));
+              }
+
+              return ListView.builder(
                 padding: EdgeInsets.zero,
-                itemCount: controller.barangList.length,
+                itemCount: filteredList.length,
                 itemBuilder: (context, index) {
-                  final barang = controller.barangList[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              barang.namaBarang,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: const Color(0xFF1D4A4B),
+                  final barang = filteredList[index];
+                  final bool isOutOfStock = barang.stokSaatIni == 0; // UBAH: Menggunakan stokSaatIni
+                  return Opacity(
+                    opacity: isOutOfStock ? 0.5 : 1.0,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(barang.namaBarang, style: TextStyle(fontSize: 16, color: const Color(0xFF1D4A4B))),
+                              Text(
+                                isOutOfStock ? 'Habis' : '${barang.stokSaatIni} Unit', // UBAH: Menggunakan stokSaatIni
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: isOutOfStock ? Colors.red[700] : const Color(0xFF1D4A4B),
+                                  fontWeight: isOutOfStock ? FontWeight.bold : FontWeight.normal,
+                                ),
                               ),
-                            ),
-                            Text(
-                              '${barang.stok} Unit', // Data dinamis dari controller
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: const Color(0xFF1D4A4B),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 16, thickness: 0.5, color: Colors.grey),
-                      ],
+                            ],
+                          ),
+                          const Divider(height: 16, thickness: 0.5, color: Colors.grey),
+                        ],
+                      ),
                     ),
                   );
                 },
-              ),
-            ),
-          ],
-        );
-      },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

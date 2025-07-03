@@ -1,25 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:catatsantai/views/stok/stock_page.dart'; // Import StockPage untuk navigasi kembali
 
-class DeleteSuccessDialog extends StatelessWidget {
-  const DeleteSuccessDialog({super.key});
+class LoginSuccessDialog extends StatelessWidget {
+  const LoginSuccessDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      // BAentuk dialog dengan sudut membulat
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
       elevation: 0,
-      backgroundColor: Colors.transparent, // Background transparan agar konten Card yang terlihat
-      child: Stack( // Menggunakan Stack untuk menumpuk icon di atas card
-        clipBehavior: Clip.none, // Memungkinkan widget di luar batas Stack terlihat
+      backgroundColor: Colors.transparent,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: <Widget>[
-          // Card putih sebagai background dialog
           Container(
             padding: const EdgeInsets.all(20),
-            margin: const EdgeInsets.only(top: 45), // Memberi ruang untuk icon di atas
+            margin: const EdgeInsets.only(top: 45),
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.rectangle,
@@ -33,35 +30,44 @@ class DeleteSuccessDialog extends StatelessWidget {
               ],
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min, // Agar kolom mengambil tinggi minimum
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const SizedBox(height: 60), // Jarak dari atas untuk icon
-                Text(
-                  'Data Terhapus!', // Teks notifikasi
+                const SizedBox(height: 60),
+                const Text(
+                  'Login Berhasil!',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1D4A4B), // Warna teks gelap
+                    color: Color(0xFF1D4A4B),
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
+                Text(
+                  'Selamat datang kembali.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 25),
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop(); // Cukup tutup dialog ini
+                      Navigator.of(context).pop(); // Tutup dialog
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A8EEB), // Warna biru tombol
+                      backgroundColor: const Color(0xFF6A8EEB),
                       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      elevation: 5, // Bayangan tombol
+                      elevation: 5,
                     ),
-                    child: Text(
-                      'Oke',
+                    child: const Text(
+                      'Lanjutkan',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -77,9 +83,9 @@ class DeleteSuccessDialog extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            top: 0, // Posisikan di bagian paling atas Stack
+            top: 0,
             child: CircleAvatar(
-              backgroundColor: Colors.white, // Background putih untuk avatar
+              backgroundColor: Colors.white,
               radius: 45,
               child: Container(
                 width: 80,
@@ -87,14 +93,14 @@ class DeleteSuccessDialog extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: const Color(0xFF6A8EEB), // Warna border biru
+                    color: const Color(0xFF6A8EEB),
                     width: 3,
                   ),
                 ),
-                child: Center(
+                child: const Center(
                   child: Icon(
                     Icons.check,
-                    color: const Color(0xFF6A8EEB), // Warna icon centang biru
+                    color: Color(0xFF6A8EEB),
                     size: 50,
                   ),
                 ),

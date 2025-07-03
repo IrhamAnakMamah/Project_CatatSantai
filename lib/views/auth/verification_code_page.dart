@@ -1,5 +1,8 @@
+import 'package:catatsantai/views/auth/reset_password_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Untuk FilteringTextInputFormatter
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../controllers/auth_controller.dart';
 
 class VerificationCodePage extends StatefulWidget {
   const VerificationCodePage({super.key});
@@ -9,15 +12,24 @@ class VerificationCodePage extends StatefulWidget {
 }
 
 class _VerificationCodePageState extends State<VerificationCodePage> {
-  // List of TextEditingControllers for each digit input
-  final List<TextEditingController> _codeControllers =
-  List.generate(5, (index) => TextEditingController());
-  // List of FocusNodes for each digit input
+  final List<TextEditingController> _codeControllers = List.generate(5, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(5, (index) => FocusNode());
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kode Verifikasi (Dummy): 12345'),
+          duration: Duration(seconds: 5),
+        ),
+      );
+    });
+  }
+
+  @override
   void dispose() {
-    // Dispose all controllers and focus nodes when the widget is removed from the tree
     for (var controller in _codeControllers) {
       controller.dispose();
     }
@@ -27,14 +39,43 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
     super.dispose();
   }
 
+  Future<void> _handleVerify() async {
+    final authController = Provider.of<AuthController>(context, listen: false);
+    final enteredCode = _codeControllers.map((c) => c.text).join();
+
+    if (enteredCode.length < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kode verifikasi harus 5 digit.')),
+      );
+      return;
+    }
+
+    try {
+      final isCorrect = await authController.verifyResetCode(enteredCode);
+      if (isCorrect && mounted) {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => const ResetPasswordPage(),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kode verifikasi salah.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Background color of the page, similar to the Figma design
-      backgroundColor: const Color(0xFFF7F5EC), // Light cream color
+      backgroundColor: const Color(0xFFF7F5EC),
       body: Stack(
         children: [
-          // Background shapes (circles and plus signs)
           Positioned(
             bottom: -50,
             left: -50,
@@ -42,7 +83,7 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
               width: 200,
               height: 200,
               decoration: BoxDecoration(
-                color: const Color(0xFF4FC0BD).withOpacity(0.8), // Tosca
+                color: const Color(0xFF4FC0BD).withOpacity(0.8),
                 shape: BoxShape.circle,
               ),
             ),
@@ -54,7 +95,7 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
               '+',
               style: TextStyle(
                 fontSize: 60,
-                color: const Color(0xFF1D4A4B).withOpacity(0.3), // Darker tosca, semi-transparent
+                color: const Color(0xFF1D4A4B).withOpacity(0.3),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -78,29 +119,24 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
               width: 150,
               height: 150,
               decoration: BoxDecoration(
-                color: const Color(0xFF4FC0BD).withOpacity(0.5), // Tosca, semi-transparent
+                color: const Color(0xFF4FC0BD).withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
             ),
           ),
-
-          // Main content of the page
-          SafeArea( // To avoid overlap with the status bar
+          SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, // Align to the left
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Back button
                   GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context); // Go back to the previous page
-                    },
+                    onTap: () => Navigator.pop(context),
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.8), // Transparent white color
+                        color: Colors.white.withOpacity(0.8),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
@@ -109,80 +145,43 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
                           ),
                         ],
                       ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new, // Back arrow icon
-                        color: const Color(0xFF1D4A4B),
-                        size: 24,
-                      ),
+                      child: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1D4A4B), size: 24),
                     ),
                   ),
                   const SizedBox(height: 30),
-
-                  // Title "Cek pesan anda"
-                  Text(
+                  const Text(
                     'Cek pesan anda',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1D4A4B), // Dark text color
-                    ),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1D4A4B)),
                   ),
                   const SizedBox(height: 10),
-
-                  // Instruction text
                   Text(
                     'Kami mengirim pesan ke nomor anda masukkan 5 digit code yang kami kirim',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[700], // Grey color
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                   ),
                   const SizedBox(height: 30),
-
-                  // 5-digit code input fields
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute evenly
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: List.generate(5, (index) {
                       return SizedBox(
-                        width: 50, // Width of each input box
+                        width: 50,
                         child: TextField(
                           controller: _codeControllers[index],
                           focusNode: _focusNodes[index],
                           keyboardType: TextInputType.number,
                           textAlign: TextAlign.center,
                           inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly, // Only allow digits
-                            LengthLimitingTextInputFormatter(1), // Limit to 1 character
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(1),
                           ],
                           decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: const Color(0xFF4FC0BD), width: 1.5),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: const Color(0xFF4FC0BD).withOpacity(0.7), width: 1.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: const Color(0xFF1D4A4B), width: 2.0),
-                            ),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                             contentPadding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           onChanged: (value) {
-                            if (value.length == 1) {
-                              // Move focus to the next field if a digit is entered
-                              if (index < _focusNodes.length - 1) {
-                                FocusScope.of(context).requestFocus(_focusNodes[index + 1]);
-                              } else {
-                                // If it's the last field, unfocus keyboard
-                                _focusNodes[index].unfocus();
-                              }
-                            } else if (value.isEmpty) {
-                              // Move focus to the previous field if backspace is pressed
-                              if (index > 0) {
-                                FocusScope.of(context).requestFocus(_focusNodes[index - 1]);
-                              }
+                            if (value.length == 1 && index < 4) {
+                              FocusScope.of(context).requestFocus(_focusNodes[index + 1]);
+                            } else if (value.isEmpty && index > 0) {
+                              FocusScope.of(context).requestFocus(_focusNodes[index - 1]);
                             }
                           },
                         ),
@@ -190,37 +189,22 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
                     }),
                   ),
                   const SizedBox(height: 40),
-
-                  // "Verifikasi Kode" button
-                  ElevatedButton(
-                    onPressed: () {
-                      // Get the entered code
-                      String enteredCode = _codeControllers.map((c) => c.text).join();
-                      print('Kode Verifikasi: $enteredCode');
-                      // TODO: Add logic to verify the code
-                      // Example: Navigate to ResetPasswordPage after successful verification
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
-                      // );
+                  Consumer<AuthController>(
+                    builder: (context, controller, child) {
+                      return controller.isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton(
+                        onPressed: _handleVerify,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A8EEB),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 5,
+                          minimumSize: const Size.fromHeight(50),
+                        ),
+                        child: const Text('Verifikasi Kode', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                      );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A8EEB), // Blue button color
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 5, // Button shadow
-                      minimumSize: const Size.fromHeight(50), // Full width
-                    ),
-                    child: Text(
-                      'Verifikasi Kode',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
                   ),
                 ],
               ),

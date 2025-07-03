@@ -1,16 +1,55 @@
+import 'package:catatsantai/views/auth/verification_code_page.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../controllers/auth_controller.dart';
 
-class ForgotPasswordPage extends StatelessWidget {
+class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
+
+  @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
+
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  final _phoneController = TextEditingController();
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleConfirm() async {
+    final authController = Provider.of<AuthController>(context, listen: false);
+    if (_phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nomor telepon tidak boleh kosong.')),
+      );
+      return;
+    }
+
+    try {
+      await authController.startPasswordReset(_phoneController.text);
+      if (mounted) {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => const VerificationCodePage(),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Warna background halaman, mirip dengan warna di design Figma
-      backgroundColor: const Color(0xFFF7F5EC), // Warna krem muda
+      backgroundColor: const Color(0xFFF7F5EC),
       body: Stack(
         children: [
-          // Background shapes (lingkaran dan tanda plus)
           Positioned(
             bottom: -50,
             left: -50,
@@ -18,7 +57,7 @@ class ForgotPasswordPage extends StatelessWidget {
               width: 200,
               height: 200,
               decoration: BoxDecoration(
-                color: const Color(0xFF4FC0BD).withOpacity(0.8), // Tosca
+                color: const Color(0xFF4FC0BD).withOpacity(0.8),
                 shape: BoxShape.circle,
               ),
             ),
@@ -30,7 +69,7 @@ class ForgotPasswordPage extends StatelessWidget {
               '+',
               style: TextStyle(
                 fontSize: 60,
-                color: const Color(0xFF1D4A4B).withOpacity(0.3), // Darker tosca, semi-transparent
+                color: const Color(0xFF1D4A4B).withOpacity(0.3),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -54,29 +93,26 @@ class ForgotPasswordPage extends StatelessWidget {
               width: 150,
               height: 150,
               decoration: BoxDecoration(
-                color: const Color(0xFF4FC0BD).withOpacity(0.5), // Tosca, semi-transparent
+                color: const Color(0xFF4FC0BD).withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
             ),
           ),
-
-          // Konten utama halaman
-          SafeArea( // Untuk menghindari overlap dengan status bar
+          SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, // Rata kiri
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tombol kembali
                   GestureDetector(
                     onTap: () {
-                      Navigator.pop(context); // Kembali ke halaman sebelumnya
+                      Navigator.pop(context);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.8), // Warna putih transparan
+                        color: Colors.white.withOpacity(0.8),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
@@ -85,53 +121,48 @@ class ForgotPasswordPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new, // Icon panah ke kiri
-                        color: const Color(0xFF1D4A4B),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Color(0xFF1D4A4B),
                         size: 24,
                       ),
                     ),
                   ),
                   const SizedBox(height: 30),
-
-                  // Judul "Lupa password"
-                  Text(
+                  const Text(
                     'Lupa password',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1D4A4B), // Warna teks gelap
+                      color: Color(0xFF1D4A4B),
                     ),
                   ),
                   const SizedBox(height: 10),
-
-                  // Instruksi
                   Text(
                     'Masukkan No. Handphone untuk mengatur ulang password',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey[700], // Warna abu-abu
+                      color: Colors.grey[700],
                     ),
                   ),
                   const SizedBox(height: 30),
-
-                  // Input No. Handphone
-                  Text(
+                  const Text(
                     'No. Handphone',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1D4A4B),
+                      color: Color(0xFF1D4A4B),
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
+                    controller: _phoneController,
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
                       hintText: 'Masukkan No. Handphone',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: const Color(0xFF4FC0BD), width: 1.5),
+                        borderSide: const BorderSide(color: Color(0xFF4FC0BD), width: 1.5),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -139,36 +170,37 @@ class ForgotPasswordPage extends StatelessWidget {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: const Color(0xFF1D4A4B), width: 2.0),
+                        borderSide: const BorderSide(color: Color(0xFF1D4A4B), width: 2.0),
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                   ),
                   const SizedBox(height: 40),
-
-                  // Tombol Konfirmasi
-                  ElevatedButton(
-                    onPressed: () {
-                      // TODO: Tambahkan logika untuk proses konfirmasi reset password
-                      print('Tombol Konfirmasi ditekan!'); // Contoh aksi
+                  Consumer<AuthController>(
+                    builder: (context, controller, child) {
+                      return controller.isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton(
+                        onPressed: _handleConfirm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A8EEB),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 5,
+                          minimumSize: const Size.fromHeight(50),
+                        ),
+                        child: const Text(
+                          'Konfirmasi',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A8EEB), // Warna biru tombol
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 5, // Bayangan tombol
-                      minimumSize: const Size.fromHeight(50), // Lebar penuh
-                    ),
-                    child: Text(
-                      'Konfirmasi',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
                   ),
                 ],
               ),

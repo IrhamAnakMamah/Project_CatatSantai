@@ -1,39 +1,50 @@
 class Barang {
   final int? id;
   final String namaBarang;
-  final int stok;
+  final int stokAwal;
+  final int stokSaatIni;
   final double harga;
+  final double hargaModal;
   final int? idKategori;
 
   Barang({
     this.id,
     required this.namaBarang,
-    required this.stok,
+    required this.stokAwal,
+    required this.stokSaatIni,
     required this.harga,
+    required this.hargaModal,
     this.idKategori,
   });
 
   Barang copyWith({
     int? id,
     String? namaBarang,
-    int? stok,
+    int? stokAwal,
+    int? stokSaatIni,
     double? harga,
+    double? hargaModal,
     int? idKategori,
-  }) =>
-      Barang(
-        id: id ?? this.id,
-        namaBarang: namaBarang ?? this.namaBarang,
-        stok: stok ?? this.stok,
-        harga: harga ?? this.harga,
-        idKategori: idKategori ?? this.idKategori,
-      );
+  }) {
+    return Barang(
+      id: id ?? this.id,
+      namaBarang: namaBarang ?? this.namaBarang,
+      stokAwal: stokAwal ?? this.stokAwal,
+      stokSaatIni: stokSaatIni ?? this.stokSaatIni,
+      harga: harga ?? this.harga,
+      hargaModal: hargaModal ?? this.hargaModal,
+      idKategori: idKategori ?? this.idKategori,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
       'id_barang': id,
       'nama_barang': namaBarang,
-      'stok': stok,
+      'stok_awal': stokAwal,
+      'stok_saat_ini': stokSaatIni,
       'harga': harga,
+      'harga_modal': hargaModal,
       'id_kategori': idKategori,
     };
   }
@@ -42,8 +53,11 @@ class Barang {
     return Barang(
       id: map['id_barang'],
       namaBarang: map['nama_barang'],
-      stok: map['stok'],
-      harga: map['harga'].toDouble(), // Pastikan konversi ke double
+      // PERBAIKAN DI SINI: Gunakan 'as int? ?? 0' untuk menangani null dari DB lama
+      stokAwal: map['stok_awal'] as int? ?? 0,
+      stokSaatIni: map['stok_saat_ini'] as int? ?? 0,
+      harga: (map['harga'] as num).toDouble(),
+      hargaModal: (map['harga_modal'] as num).toDouble(),
       idKategori: map['id_kategori'],
     );
   }
