@@ -42,7 +42,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           # Token ini digunakan untuk otorisasi. Anda tidak perlu membuat secret baru untuk ini.
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           # Membuat nama tag secara dinamis agar unik untuk setiap rilis
           tag_name: build-${{ github.run_number }}
           # Memberi nama rilis yang akan tampil di halaman Releases
@@ -50,4 +50,4 @@ jobs:
           # Path ke file APK yang akan diunggah
           files: build/app/outputs/apk/release/app-release.apk
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
